@@ -5,6 +5,7 @@ pkg_list = c(
     , "dplyr"
     , "lubridate"
     , "ggmap"
+    , "knitr"
 )
 
 script_list = c(

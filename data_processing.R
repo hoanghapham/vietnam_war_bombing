@@ -30,7 +30,9 @@ data_raw[atk_hour > 24, atk_hour := NA]
 # Cleaning ----------------------------------------------------------------
 # + Varchar -----------------------------------------------------------------
 
-data_raw <- data_raw[msndate >= "1965-10-01" & msndate <= "1973-12-31"]
+data_raw <- data_raw[msndate >= "1965-10-01" 
+                     # & msndate <= "1973-12-31"
+                     ]
 
 # Remove dup rows
 check_vars <- c(
@@ -96,6 +98,7 @@ data_raw[, (drop_cols) := NULL]
 
 # Expanding ---------------------------------------------------------------
 data_raw[, operation_grp := tstrsplit(operationsupported, " |&|-")[1]]
+data_raw[, operation_grp := gsub("YANKEE$", "YANKEETEAM", operation_grp)]
 
 # Aircraft type
 aircrafts <- fread("data/raw/THOR_Vietnam_Aircraft_Glossary.csv", 

@@ -1,0 +1,195 @@
+---
+title: "Vietnam Bombing Hisotory - Chapter 1"
+author: "Ha Pham"
+date: "October 7, 2018"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+
+source("config/config_pj.R")
+
+knitr::opts_chunk$set(echo = FALSE, include=FALSE)
+```
+
+# Introduction
+
+History as taught in Vietnam schools is boring. Modern war history is even more boring, because of the very unattractive way textbooks present the narrative of war. We were taught that our army is brave, noble and great, and we had impossible feats considering the size and technology level of our country. However, I always remain skeptical about all those teachings. History as told by only one side is never complete, so I always want to learn what the other side can tell me about the war.
+
+Recently my friend and I came across the THOR (Theater History of Operations Reports) database which was painstakingly compiled by Lt. Col. Jenns Robertson in more than 8 years. The database contains the last 70 - 100 years of bombing data, data about World War II and Vietnam War are the most complete. The database has already proved useful in finding unexploded bombs in South East Asia
+
+For a data noob who is somewhat curioU.S. about my country's untold stories, this is indeed a gold mine. There are already tons of Vietnam history blog posts, but it seems that none of them are "data-driven". I intend to provide a new way to view history with my series of blog posts.
+
+- Chapter 1: Overview of the war
+- Chapter 2: Details of each year and operations
+
+# Describe of data
+
+The original data consists of 4,8 million rows describing each run. As defined in the data dictionary, one aircraft delivering a particular weapon or strike a particular target will generate a new record. The data contains information about sorties like: operation supported, mission type, aircraft used, weapon (bomb) used, military services carrying out the mission, target coordinate, tonnage of weapons delivered...
+
+The data is compiled from paper reports, so it is expected to have problems - in other words, the data is not "clean". Some of the problems:
+
+- Duplicated sorties: the data is compiled from many sources, and there are cases where the data is updated so it is unavoidable to have duplicated records. 
+- Non standardized operation / mission naming: great efforts have been spent to standardize the mission names and fix typos. However, this is just me doing it and I have little history and military knowledge so I'm not sure if I fixed them correctly.
+- Vietnam bombing data is still incomplete - currently no data prior to September 30th 1965 were included. The data structure is still a work in progress, and this introduces another problem to the analaysis, as there are columns that I cannot understand their meanings.
+
+# Some definitions to be used 
+
+- Strike: correspond to one row in the dataset. If the same aircraft carrying the same weapons but attacked two targets, this will be counted as two strikes
+- Operation: The OPERATION_SUPPORTED field in the dataset is quite messy. It seems that the operation names is comprised of the name of the whole operation and the number assigned to identify the missions. 
+
+
+# Context
+
+Why the war happended at all?
+
+The official time span of the war is 1955 - 1975, but the root of it started a bit further.
+As we know, France' rule in Vietnam lasted for about 60 years from 1887 and ended with Vietnam's proclamation of independence in 1945. France did not accepted Vietnam's independence, so from 1945 they tried to reestablish themselves in the area but was also defeated in 1954. It was during this period that the U.S. got involved in Indochina affairs.
+
+During World War II, while Japan occupied French Indochina, Viet Minh was established in 1941 as an organized resistance group seeking to free Vietnam. BecaU.S.e along with fighting France, Viet Minh also opposed Japan so it received supports from the U.S., Soviet Union and China. After Japan's surrender in 1945, Viet Minh fought against France to protect its new found freedom. 
+
+In 1949, France established the State of Vietnam under the nominal rule of Bao Dai in the south in 1949 as opposition force against communist North Vietnam. At the same period, **Domino Theory** was popular in the West and stated that "if one country in a region came under the influence of communism, then the surrounding countries would follow in a domino effect". The U.S. saw Viet Minh's affiliation with communist ideas as a great danger, thus gradually turning their support to France. Even after France's defeat in 1954, they still fixated on the idea that South Vietnam should not be a communist state. Believing that Ngo Dinh Diem has the potential to drive Viet Minh away from the South, the U.S. supporting him overthrown Bao Dai's government and provided him with military services. 
+
+From this moment it turned out that the U.S. drew the short straw. South Vietnam's government was reported to be "corrupted and unpopular", and is a difficult state to support. No mater how many "advisers" were sent to train South Vietnam's forces, they could not defeat Viet Cong. Up until 1964, the U.S.'s involvement in Vietnam had not been direct, but after the infamous Tonkin Gulf incident, it moved its stance to an offensive one from 1965.
+
+# Vienam war - Overview of period 1965 - 1973
+
+```{r}
+bombing = fread("data/processed/bombing.csv")
+replace_missing(bombing)
+bombing[, msndate := ymd(msndate)]
+
+```
+
+```{r}
+# bombing[, .(Operation s), by = .(milservice)]
+
+total_tonnage = sum(as.numeric(bombing$weapontypeweight * bombing$numweaponsdelivered), na.rm = T) * 0.453592 
+tonnage_txt = (total_tonnage / 1000) %>% round() %>% comma()
+
+```
+
+I used [this article](https://rarehistoricalphotos.com/vietnam-war-escalation-and-withdrawal-1968-1975/) as the basis to conduct my investigation. I intend to go through main ideas of the article and demonstrate it using data. 
+
+Some general statistics of Vietnam war's bombing from end of 1965 to 1975:
+
+- Number of operations: `r uniqueN(bombing$operation_grp)`
+- Number of aircrafts type used: `r uniqueN(bombing$aircraft_root)`
+- Number of weapons type used: `r uniqueN(bombing$weapontype)`
+- Countries targeted: North Vietnam, South Vietnam, Thailand, Laos, Cambodia, Phillipines and some West Pacific locations
+- Total tonage of bombing is ***`r tonnage_txt`*** tons while the whole tonnage of U.S. bombing in World War II is roughly 2,057,244 - three times less than that in Vietnam. This is simply crazy.
+
+We can have an overview of the U.S.'s escalation and withdrawal in Vietnam through the graph of air strikes through out the years:
+
+```{r, include=TRUE}
+strikes_year = bombing[mfunc_desc_class == "KINETIC", .(strike_count = .N), by = .(msnyear)]
+
+ggplot(strikes_year) + 
+    geom_bar(aes(x = as.factor(msnyear), y = strike_count), stat = "identity")
+```
+
+U.S.'s involvement increased gradually from 1965 and topped in 1986. This is a bloody year for both sides of the war, and is considered the transition from the "idealisms" of the 1960s and the disillusionment of the 1970s. Due to Tet Offensive, U.S. press and public started to "challenge the Johnson administration’s assurances of success and to question the value of the increasingly costly war." The graph shows lessened airforce activities after 1968, with another come bank in 1972 when peace negotiations broke down. We will come back to this year later, as it is a very interesting period to look into.
+
+```{r}
+vnconflict = fread("data/raw/VietnamConflict.csv")
+fatal_year = vnconflict[FATALITY_YEAR < 1975, .(fatal_count = .N), by = .(FATALITY_YEAR)]
+```
+
+Data of U.S. force's fatality in Vietnam War further proved this. In 1968 `r max(fatal_year$fatal_count) %>% comma` U.S. were reportedly deceased. The number decreased gradually in the after years. 
+
+```{r, include=TRUE}
+ggplot(fatal_year) + 
+    geom_bar(aes(x = as.factor(FATALITY_YEAR), y = fatal_count), stat = "identity")
+
+```
+
+In March 1968, Johnson decided that U.S.' effort in Vietnam could no longer be justified. After being requested 200,000 more men, he consulted with his new secretary of defense and outside advisers and decided that a limit had been reached. Johnson authorized only 13,500 more and informed Thieu and Ky that South Vietnam will "have to carry more of the fighting". This later results in what was called "Vietnamization" of the war.
+
+In general the U.S. Air Force is the main actor in this war. Other main military services took part in the war included U.S. Navy, Marine Corps and (South) Vietnam Air Force. 
+
+
+```{r, include=TRUE}
+
+strike_mil = bombing[mfunc_desc_class == "KINETIC" & !is.na(milservice), .(
+    strike_count = .N
+), by = .(milservice)][order(-strike_count)]
+
+strike_mil[, milservice := reorder(milservice, strike_count)]
+
+ggplot(strike_mil) + 
+    geom_bar(aes(x = milservice, y = strike_count), stat = "identity") + 
+    geom_text(aes(x = milservice, y = strike_count, label = comma(strike_count)), hjust = -0.2) +
+    ylim(c(0, 2200000)) + 
+    labs(x = "", y = "") + 
+    coord_flip() +
+    ggtitle("Total number of strikes carried out by air forces")
+
+```
+
+Over the years U.S. forces still hold the main responsibility to carry out air strikes. However, after 1968 U.S. forces' activities lessened and VNAF carried more runs. 
+
+
+```{r, include=TRUE}
+strike_army_year = bombing[mfunc_desc_class == "KINETIC" & !is.na(milservice), .(
+    strike_count = .N
+    ), by = .(msnyear, milservice)]
+
+ggplot(strike_army_year[milservice %in% c("USAF", "USMC", "USN", "VNAF")]) + 
+    geom_bar(aes(x = msnyear, y = strike_count, fill = milservice), stat = "identity", show.legend = F) + 
+    scale_x_continuous(breaks = 1965:1973) + 
+    scale_y_continuous(labels = comma_format()) + 
+    facet_wrap(~milservice, scales = "free_y") +
+    ggtitle("Strikes delivered by forces over the years") + 
+    labs(x = "", y = "")
+
+```
+
+On 31st March 1968 he announced on TV that the United States would "restrict bombing of Vietnam" and pursue negotiation with Hanoi. 
+
+Bombing map throughout the years will show interesting patterns.
+
+```{r}
+vncenter = c(108.20217, 16.05441)
+# vnmap <- ggmap(get_googlemap(center = vncenter, scale = 2, zoom = 6, maptype = "roadmap"), extent = "normal")
+
+vnmap = readRDS("data/raw/vnmap.rds")
+target_coord <- bombing[, .(msnyear, mfunc_desc_class, 
+                            lon = tgt_lon, 
+                            lat = tgt_lat)] %>% unique()
+
+target_col <- c(
+    "KINETIC" = "firebrick2"
+    , "NONKINETIC" = "dodgerblue"
+)
+
+```
+
+
+```{r, include=TRUE, fig.height=6, fig.width=6, fig.align="center"}
+plot_bomb_points(vnmap, target_coord, 1965, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1966, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1967, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1968, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1969, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1970, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1971, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1972, nsample = 5000)
+# plot_bomb_points(vnmap, target_coord, 1973, nsample = 5000)
+```
+
+
+
+
+
+***
+
+War story has never been a pretty and noble one. While digging through articles to make this, I found unpleasant information about both sides of the war. 
+
+# References
+
+- https://wikieducator.org/images/8/8b/VIETNAM_WAR_BACKGROUND.pdf
+- https://www.airuniversity.af.mil/News/Article/704552/historic-airpower-database-now-online/
+- https://www.u-s-history.com/pages/h1888.html
+- https://en.wikipedia.org/wiki/Operation_Rolling_Thunder
+- https://rarehistoricalphotos.com/vietnam-war-escalation-and-withdrawal-1968-1975/

@@ -34,18 +34,18 @@ plot_bomb_dens_year <- function(vnmap, target_coord, year, nsample = 1000)
         scale_x_continuous(breaks = seq(102, 114, 1)) + 
         scale_y_continuous(breaks = seq(10, 22, 1)) + 
         ggtitle(sprintf("Bombing intensity map %s", year)) + 
-        labs(x = "Longitude", y = "Latitude") + 
+        labs(x = "", y = "") + 
         theme(
             panel.background = element_blank()
             , axis.ticks = element_blank()
-            , axis.line = element_line(size = 0.3)
+            , axis.line = element_line(size = 0.1)
         )
     
     return(bomb_map)
 }
 
 
-plot_bomb_route_year <- function(vnmap, target_coord, year, nsample = 1000)
+plot_bomb_points <- function(vnmap, target_coord, year, nsample = 1000)
 {
     target_df <- target_coord %>% 
         filter(
@@ -59,8 +59,6 @@ plot_bomb_route_year <- function(vnmap, target_coord, year, nsample = 1000)
     
     bomb_map = vnmap +
         geom_point(data = target_df, aes(x = lon, y = lat), size = 0.1, col = "red") +
-        # geom_density_2d(data = target_df, aes(x = lon, y = lat), size = 0.3) +
-        # stat_density_2d(data = target_df, aes(x = lon, y = lat, fill = ..level.., alpha = ..level..), geom = "polygon") + 
         geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.5) +
         geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.5) + 
         scale_color_manual(values = target_col) + 
@@ -69,11 +67,11 @@ plot_bomb_route_year <- function(vnmap, target_coord, year, nsample = 1000)
         scale_x_continuous(breaks = seq(102, 114, 1)) + 
         scale_y_continuous(breaks = seq(10, 22, 1)) + 
         ggtitle(sprintf("Bombing target map %s", year)) + 
-        labs(x = "Longitude", y = "Latitude") + 
+        labs(x = "", y = "") + 
         theme(
             panel.background = element_blank()
             , axis.ticks = element_blank()
-            , axis.line = element_line(size = 0.3)
+            , axis.line = element_line(size = 0.1)
         )
     
     return(bomb_map)
@@ -110,6 +108,6 @@ replace_missing <- function(df, value = NA)
 {
     for (j in names(df)){
         set(df, i = which(df[[j]] == ""), j = j, value = value)
-        set(df, i = grep("unknown|UNKNOWN", data_raw[[j]]), j = j, value = value)
+        set(df, i = grep("unknown|UNKNOWN", df[[j]]), j = j, value = value)
     }
 }
