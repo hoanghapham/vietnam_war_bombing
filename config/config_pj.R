@@ -6,6 +6,7 @@ pkg_list = c(
     , "lubridate"
     , "ggmap"
     , "knitr"
+    , "gridExtra"
 )
 
 script_list = c(

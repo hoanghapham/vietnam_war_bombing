@@ -26,8 +26,8 @@ plot_bomb_dens_year <- function(vnmap, target_coord, year, nsample = 1000)
     bomb_map = vnmap +
         geom_density_2d(data = target_df, aes(x = lon, y = lat), size = 0.3) +
         stat_density_2d(data = target_df, aes(x = lon, y = lat, fill = ..level.., alpha = ..level..), geom = "polygon") + 
-        geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.5) +
-        geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.5) + 
+        geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.7, color = "gray") +
+        geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.7, color = "gray") + 
         scale_color_manual(values = target_col) + 
         scale_fill_gradient(low = "green2", high = "red2") + 
         scale_alpha(guide = F) + 
@@ -38,7 +38,7 @@ plot_bomb_dens_year <- function(vnmap, target_coord, year, nsample = 1000)
         theme(
             panel.background = element_blank()
             , axis.ticks = element_blank()
-            , axis.line = element_line(size = 0.1)
+            , axis.line = element_line(size = 0.1, color = "gray")
         )
     
     return(bomb_map)
@@ -59,8 +59,8 @@ plot_bomb_points <- function(vnmap, target_coord, year, nsample = 1000)
     
     bomb_map = vnmap +
         geom_point(data = target_df, aes(x = lon, y = lat), size = 0.1, col = "red") +
-        geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.5) +
-        geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.5) + 
+        geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.7, color = "gray") +
+        geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.7, color = "gray") + 
         scale_color_manual(values = target_col) + 
         scale_fill_gradient(low = "green2", high = "red2") + 
         scale_alpha(guide = F) + 
@@ -71,7 +71,7 @@ plot_bomb_points <- function(vnmap, target_coord, year, nsample = 1000)
         theme(
             panel.background = element_blank()
             , axis.ticks = element_blank()
-            , axis.line = element_line(size = 0.1)
+            , axis.line = element_line(size = 0.1, color = "gray")
         )
     
     return(bomb_map)

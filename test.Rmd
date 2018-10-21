@@ -1,0 +1,14 @@
+---
+title: "test"
+author: "Ha Pham"
+date: "October 14, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+adfasdfasfdasdf
+
+*abcasdfsadfasfdsdaf*
