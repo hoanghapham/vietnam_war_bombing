@@ -7,6 +7,7 @@ pkg_list = c(
     , "ggmap"
     , "knitr"
     , "gridExtra"
+    , "gganimate"
 )
 
 script_list = c(

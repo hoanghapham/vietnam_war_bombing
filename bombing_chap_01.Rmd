@@ -1,8 +1,7 @@
 ---
-title: "Vietnam Bombing Hisotory - Chapter 1"
+title: "Vietnam Bombing History - Chapter 1"
 author: "Ha Pham"
-date: "October 7, 2018"
-output: pdf_document
+output: html_document
 urlcolor: blue
 ---
 
@@ -19,10 +18,7 @@ History as taught in Vietnam schools is boring. Modern war history is even more 
 
 Recently my friend and I came across the THOR (Theater History of Operations Reports) database which was painstakingly compiled by Lt. Col. Jenns Robertson in more than 8 years. The database contains the last 70 - 100 years of bombing data, data about World War II and Vietnam War are the most complete. The database has already proved useful in finding unexploded bombs in South East Asia
 
-For a data noob who is somewhat curioU.S. about my country's untold stories, this is indeed a gold mine. There are already tons of Vietnam history blog posts, but it seems that none of them are "data-driven". I intend to provide a new way to view history with my series of blog posts.
-
-- Chapter 1: Overview of the war
-- Chapter 2: Details of each year and operations
+For a data noob who is somewhat curious about my country's untold stories, this is indeed a gold mine. There are already tons of Vietnam history blog posts, but it seems that none has approached this matter with data. In this Chapter 1, I will provide an overall narrative of the war because this is also something that I like to know. No in-depth analysis is involved.
 
 # Describe of data
 
@@ -45,32 +41,32 @@ The data is compiled from paper reports, so it is expected to have problems - in
 Why the war happended at all?
 
 The official time span of the war is 1955 - 1975, but the root of it started a bit further.
-As we know, France' rule in Vietnam lasted for about 60 years from 1887 and ended with Vietnam's proclamation of independence in 1945. France did not accepted Vietnam's independence, so from 1945 they tried to reestablish themselves in the area but was also defeated in 1954. It was during this period that the U.S. got involved in Indochina affairs.
+As we know, France's rule in Vietnam lasted for about 60 years from 1887 and ended with Vietnam's proclamation of independence in 1945. France did not accepted Vietnam's independence, so from 1945 they tried to reestablish themselves in the area but was defeated again in 1954. It was in this period that the U.S. got involved in Indochina affairs.
 
-During World War II, while Japan occupied French Indochina, Viet Minh was established in 1941 as an organized resistance group seeking to free Vietnam. BecaU.S.e along with fighting France, Viet Minh also opposed Japan so it received supports from the U.S., Soviet Union and China. After Japan's surrender in 1945, Viet Minh fought against France to protect its new found freedom. 
+During World War II, while Japan occupied French Indochina, Viet Minh was established in 1941 as an organized resistance group seeking to free Vietnam. Along with fighting France, Viet Minh also opposed Japan so it received supports from the U.S., Soviet Union and China. After Japan's surrender in 1945, Viet Minh fought against France to protect Vietnam's new found freedom. 
 
-In 1949, France established the State of Vietnam under the nominal rule of Bao Dai in the south in 1949 as opposition force against communist North Vietnam. At the same period, **Domino Theory** was popular in the West and stated that "if one country in a region came under the influence of communism, then the surrounding countries would follow in a domino effect". The U.S. saw Viet Minh's affiliation with communist ideas as a great danger, thus gradually turning their support to France. Even after France's defeat in 1954, they still fixated on the idea that South Vietnam should not be a communist state. Believing that Ngo Dinh Diem has the potential to drive Viet Minh away from the South, the U.S. supporting him overthrown Bao Dai's government and provided him with military services. 
+In 1949, France established the State of Vietnam under the nominal rule of Bao Dai in the south as an opposition force against communist North Vietnam. At the same period, **Domino Theory** was popular in the West and stated that **"if one country in a region came under the influence of communism, then the surrounding countries would follow in a domino effect"**. The U.S. saw Viet Minh's affiliation with communist ideas as a great danger, thus gradually turning their support to France. Even after France's defeat in 1954, they still fixated on the idea that South Vietnam should not be a communist state. Believing that Ngo Dinh Diem has the potential to drive Viet Minh away from the South, the U.S. supporting him overthrow Bao Dai's government and provided him with military services. 
 
-From this moment it turned out that the U.S. drew the short straw. South Vietnam's government was reported to be "corrupted and unpopular", and is a difficult state to support. No mater how many "advisers" were sent to train South Vietnam's forces, they could not defeat Viet Cong. Up until 1964, the U.S.'s involvement in Vietnam had not been direct, but after the infamous Tonkin Gulf incident, it moved its stance to an offensive one from 1965.
+From this moment it turned out that the U.S. drew the short straw. South Vietnam's government was reported to be "corrupted and unpopular", and is a difficult state to support. No mater how many "advisors" were sent to train South Vietnam's forces, they could not defeat Viet Cong. Up until 1964, the U.S.'s involvement in Vietnam had not been direct, but after the infamous Tonkin Gulf incident, it moved to offensive stance from 1965.
 
-# Vienam war - Overview of period 1965 - 1973
+# Vienam war period 1965 - 1973
 
 ```{r}
 bombing = fread("data/processed/bombing.csv")
 replace_missing(bombing)
 bombing[, msndate := ymd(msndate)]
-
 ```
 
 ```{r}
 # bombing[, .(Operation s), by = .(milservice)]
 
 total_tonnage = sum(as.numeric(bombing$weapontypeweight * bombing$numweaponsdelivered), na.rm = T) * 0.453592 
+
 tonnage_txt = (total_tonnage / 1000) %>% round() %>% comma()
 
 ```
 
-I used [this article](https://rarehistoricalphotos.com/vietnam-war-escalation-and-withdrawal-1968-1975/) as the basis to conduct my investigation. I intend to go through main ideas of the article and demonstrate it using data. 
+I used [this article](https://rarehistoricalphotos.com/vietnam-war-escalation-and-withdrawal-1968-1975/) as the basis to conduct my investigation, meaning I will go through main ideas and demonstrate it using data. 
 
 Some general statistics of Vietnam war's bombing from end of 1965 to 1975:
 
@@ -78,90 +74,164 @@ Some general statistics of Vietnam war's bombing from end of 1965 to 1975:
 - Number of aircrafts type used: `r uniqueN(bombing$aircraft_root)`
 - Number of weapons type used: `r uniqueN(bombing$weapontype)`
 - Countries targeted: North Vietnam, South Vietnam, Thailand, Laos, Cambodia, Phillipines and some West Pacific locations
-- Total tonage of bombing is ***`r tonnage_txt`*** tons while the whole tonnage of U.S. bombing in World War II is roughly 2,057,244 - three times less than that in Vietnam. This is simply crazy.
+- Total tonage of bombing is **`r tonnage_txt`** tons while the whole tonnage of U.S. bombing in World War II is roughly 2,057,244 - three times less than that in Vietnam. This is simply crazy.
 
 We can have an overview of the U.S.'s escalation and withdrawal in Vietnam through the graph of air strikes through out the years:
 
-```{r, include=TRUE}
-strikes_year = bombing[mfunc_desc_class == "KINETIC", .(
+```{r, include=TRUE, fig.height=5, fig.width=12, fig.align="center"}
+
+theme_clear = theme(
+    panel.background = element_blank()
+    , panel.grid.major = element_blank()
+    , axis.ticks = element_blank() 
+    , axis.text = element_text(color = "gray30")
+)
+
+strikes_year = bombing[mfunc_desc_class == "KINETIC" & msnyear <= 1973, .(
     strike_count = .N
     , tonnage = sum(as.numeric(weapontypeweight * numweaponsdelivered))
     ), by = .(msnyear)]
 
 p_atk = ggplot(strikes_year) + 
-    geom_bar(aes(x = as.factor(msnyear), y = strike_count), stat = "identity")
+    geom_bar(aes(x = as.factor(msnyear), y = strike_count), fill = "dodgerblue4", stat = "identity") + 
+    geom_text(aes(x = as.factor(msnyear), y = strike_count, 
+                  label = round(strike_count / 10^3, 0)), vjust = 1.6, col = "white") +
+    ylim(0, 700000) +
+    labs(x = "", y = "") + 
+    ggtitle("Bombing strikes (Thousands)") +
+    theme_clear + 
+    theme(axis.text.y = element_blank(), axis.text.x = element_text(size = 12)) 
 
 p_ton = ggplot(strikes_year) + 
-    geom_bar(aes(x = as.factor(msnyear), y = tonnage), stat = "identity")
+    geom_bar(aes(x = as.factor(msnyear), y = tonnage), fill = "firebrick3", stat = "identity") + 
+    geom_text(aes(x = as.factor(msnyear), y = tonnage, 
+                  label = comma(round(tonnage / 10^6, 0))), vjust = 1.6, col = "white") +
+    ylim(0, 2.7 * 10^9) +
+    labs(x = "", y = "") +
+    ggtitle("Bombing tonnage (Million tons)") + 
+    theme_clear +
+    theme(axis.text.y = element_blank(), axis.text.x = element_text(size = 12))
 
-grid.arrange(p_atk, p_ton, ncol = 2)
-
+grid.arrange(p_atk, p_ton, ncol = 2) 
+ggsave("strike_ton.png", device = "png", plot = grid.arrange(p_atk, p_ton, ncol = 2), width = 12, height = 5, path = "plot/")
 ```
+
+## 1965 - 1968: bloody years, and the beginning of peace talk
 
 U.S.'s involvement increased gradually from 1965 and topped in 1968. This is a bloody year for both sides of the war, and is considered the transition from the "idealisms" of the 1960s and the disillusionment of the 1970s. Due to Tet Offensive, U.S. press and public started to "challenge the Johnson administration’s assurances of success and to question the value of the increasingly costly war." The graph shows lessened airforce activities after 1968, with another come bank in 1972 when peace negotiations broke down. We will come back to this year later, as it is a very interesting period to look into.
 
-```{r}
+\newpage
+
+Data of U.S. force's fatality in Vietnam War further proved this. In 1968 about 16,000 U.S. soldiers were reportedly deceased (in the article, this number is 14,000). The number decreased gradually in the after years. 
+
+```{r, include=TRUE, fig.height=5, fig.width=6, fig.align="center"}
 vnconflict = fread("data/raw/VietnamConflict.csv")
-fatal_year = vnconflict[FATALITY_YEAR < 1975, .(fatal_count = .N), by = .(FATALITY_YEAR)]
-```
+fatal_year = vnconflict[FATALITY_YEAR <= 1972 & FATALITY_YEAR >= 1965, .(
+    fatal_count = .N), by = .(FATALITY_YEAR)]
 
-Data of U.S. force's fatality in Vietnam War further proved this. In 1968 `r max(fatal_year$fatal_count) %>% comma` U.S. were reportedly deceased (in the article, this number is 14,000). The number decreased gradually in the after years. 
-
-```{r, include=TRUE}
 ggplot(fatal_year) + 
-    geom_bar(aes(x = as.factor(FATALITY_YEAR), y = fatal_count), stat = "identity")
+    geom_bar(aes(x = as.factor(FATALITY_YEAR), y = fatal_count), fill = "firebrick3"
+             , stat = "identity") + 
+    geom_text(aes(x = as.factor(FATALITY_YEAR), y = fatal_count, 
+                  label = comma(fatal_count), vjust = 1.5), col = "white") + 
+    ylim(0, 17000) +
+    labs(x = "", y = "", caption = "U.S. force reported fatalities in Vietnam War") + 
+    theme_clear + 
+    theme(
+        axis.text.y = element_blank()
+        , plot.caption = element_text(size = 12, color = "gray30", hjust = 0.5)
+        )
+ggsave("fatality.png", width = 6, height = 5, device = "png", path = "plot/")
 
 ```
 
 In March 1968, Johnson decided that U.S.' effort in Vietnam could no longer be justified. After being requested 200,000 more men, he consulted with his new secretary of defense and outside advisers and decided that a limit had been reached. Johnson authorized only 13,500 more and informed Thieu and Ky that South Vietnam will "have to carry more of the fighting". This later results in what was called "Vietnamization" of the war.
 
-In general the U.S. Air Force is the main actor in this war. Other main military services took part in the war included U.S. Navy, Marine Corps and (South) Vietnam Air Force. 
+\newpage
+
+In general the U.S. Air Force is the main actor in this war. Other main military services took part in the war included U.S. Navy, Marine Corps and (South) Vietnam Air Force. Royal Laotian Air Force, Royal Australian Air Force, Khmer Air Force and U.S. Army also took part in some missions, but their roles are not significant.
 
 
-```{r, include=TRUE}
+```{r, include=TRUE, fig.width=4, fig.height=4, fig.align="center"}
 
-strike_mil = bombing[mfunc_desc_class == "KINETIC" & !is.na(milservice), .(
-    strike_count = .N
+strike_mil = bombing[mfunc_desc_class == "KINETIC" 
+                     & milservice %in% c("USAF", "USN", "USMC", "VNAF"), .(
+    strike_count = .N / 1000
 ), by = .(milservice)][order(-strike_count)]
 
 strike_mil[, milservice := reorder(milservice, strike_count)]
 
+force_col = c(
+    "USAF" = "dodgerblue4"
+    , "USN" = "darkgoldenrod3"
+    , "USMC" = "red3"
+    , "VNAF" = "royalblue3"
+    , "RLAF" = "gray"
+    , "RAAF" = "gray"
+    , "KAF" = "gray"
+    , "USA" = "gray"
+)
+
 ggplot(strike_mil) + 
-    geom_bar(aes(x = milservice, y = strike_count), stat = "identity") + 
-    geom_text(aes(x = milservice, y = strike_count, label = comma(strike_count)), hjust = -0.2) +
-    ylim(c(0, 2200000)) + 
-    labs(x = "", y = "") + 
-    coord_flip() +
-    ggtitle("Total number of strikes carried out by air forces")
+    geom_bar(aes(x = milservice, y = strike_count, fill = milservice), show.legend = F, stat = "identity") + 
+    geom_text(aes(x = milservice, y = strike_count, 
+                  label = comma(round(strike_count, 0))), vjust = 1.6, col = "white") +
+    ylim(c(0, 2000)) + 
+    scale_fill_manual(values = force_col) +
+    labs(x = "", y = "", caption = "Number of strikes by air forces (Thousands)") + 
+    theme_clear +
+    theme(axis.text.y = element_blank()
+          , axis.text.x = element_text(size = 10)
+          , plot.caption = element_text(size = 11, color = "gray30", hjust = 0.5)
+          )
+
+ggsave("strikes_force.png", width = 4, height = 4, device = "png", path = "plot/")
 
 ```
 
 Over the years U.S. forces still hold the main responsibility to carry out air strikes. However, after 1968 U.S. forces' activities lessened and VNAF carried more runs. 
 
 
-```{r, include=TRUE}
-strike_army_year = bombing[mfunc_desc_class == "KINETIC" & !is.na(milservice), .(
-    strike_count = .N
+```{r, include=TRUE, fig.width=12, fig.height=8, fig.align="center"}
+strike_army_year = bombing[msnyear <= 1973 
+                           & mfunc_desc_class == "KINETIC" 
+                           & milservice %in% c("USAF", "USMC", "USN", "VNAF"), .(
+    strike_count = .N / 1000
     ), by = .(msnyear, milservice)]
+strike_army_year[, ratio_on_max := strike_count / max(strike_count), by = .(milservice)]
 
-ggplot(strike_army_year[milservice %in% c("USAF", "USMC", "USN", "VNAF")]) + 
-    geom_bar(aes(x = msnyear, y = strike_count, fill = milservice), stat = "identity", show.legend = F) + 
+ggplot(strike_army_year) + 
+    geom_bar(aes(x = msnyear, y = strike_count, fill = milservice)
+             , stat = "identity", show.legend = F) + 
+    geom_text(data = strike_army_year[ratio_on_max > 0.1 ]
+              , aes(x = msnyear, y = strike_count, label = round(strike_count, 0))
+              , vjust = 1.6, col = "white", size = 4.5) + 
     scale_x_continuous(breaks = 1965:1973) + 
-    scale_y_continuous(labels = comma_format()) + 
-    facet_wrap(~milservice, scales = "free_y") +
-    ggtitle("Strikes delivered by forces over the years") + 
-    labs(x = "", y = "")
+    scale_y_continuous(labels = comma_format()) +
+    scale_fill_manual(values = force_col) +
+    facet_wrap(~milservice, scales = "free", strip.position = "bottom") +
+    labs(x = "", y = "", caption = "Strikes delivered by forces over the years (Thousands)") + 
+    theme_clear + 
+    theme(
+        axis.text.y = element_blank()
+        , axis.text.x = element_text(size = 12)
+        , strip.background = element_rect(fill = "transparent", color = "gray")
+        , strip.text = element_text(color = "gray30", size = 13)
+        , plot.caption = element_text(color = "gray30", hjust = 0.5, size = 13)
+        )
+
+ggsave("strikes_force_years.png", width = 12, height = 8, device = "png", path = "plot/")
 
 ```
 
-On 31st March 1968 Johnson announced on TV that the United States would "restrict bombing of North Vietnam" and pursue negotiation with Hanoi. This is reflected in the following bombing maps:
+
 
 ```{r}
 vncenter = c(108.20217, 16.05441)
 # vnmap <- ggmap(get_googlemap(center = vncenter, scale = 2, zoom = 6, maptype = "roadmap"), extent = "normal")
 
 vnmap = readRDS("data/raw/vnmap.rds")
-target_coord <- bombing[, .(msnyear, mfunc_desc_class, 
+target_coord <- bombing[mfunc_desc_class == "KINETIC", .(msnyear, mfunc_desc_class, 
                             lon = tgt_lon, 
                             lat = tgt_lat)] %>% unique()
 
@@ -172,84 +242,137 @@ target_col <- c(
 
 ```
 
-```{r, include=TRUE, fig.height=7, fig.width=14, fig.align="center"}
+\newpage
+
+We can clearly see the North is bombed quite heavily throughout 1965 - 1967, as well as the famous Ho Chi Minh Trail. On 31st March 1968 Johnson announced on TV that the United States would "restrict bombing of North Vietnam" and pursue negotiation with Hanoi. This is reflected in the change of bombing intensity in the maps of 1968, 1969, 1970.
+
+```{r, include=TRUE, fig.height=12, fig.width=12, fig.align="center"}
 p65 = plot_bomb_points(vnmap, target_coord, 1965, nsample = 5000)
 p66 = plot_bomb_points(vnmap, target_coord, 1966, nsample = 5000)
-grid.arrange(p65, p66, ncol = 2)
-```
-We can clearly see the North is bombed quite heavily throughout 1965 - 1967, as well as the famous Ho Chi Minh Trail.
-
-Bombing intensity in the northen part is lessened in 1968...
-
-
-```{r, include=TRUE, fig.height=7, fig.width=14, fig.align="center"}
 p67 = plot_bomb_points(vnmap, target_coord, 1967, nsample = 5000)
 p68 = plot_bomb_points(vnmap, target_coord, 1968, nsample = 5000)
-grid.arrange(p67, p68, ncol = 2)
+
+grid.arrange(p65, p66, p67, p68, ncol = 2)
+ggsave("bomb_6568.png", width = 12, height = 12, 
+       plot = grid.arrange(p65, p66, p67, p68, ncol = 2), device = "png", path = "plot/")
+
 ```
 
-and came to a stop in 1969 and 1970. However, we can see the U.S. started expanding bombing attacks to Cambodia.
+Bombing in the north lessened in 1968 and stopped in 1969 - 1970.
 
-
-
-```{r, fig.height=7, fig.width=14, fig.align="center", include=TRUE}
-
+```{r, include=TRUE, fig.height=6, fig.width=12, fig.align="center"}
 p69 = plot_bomb_points(vnmap, target_coord, 1969, nsample = 5000)
 p70 = plot_bomb_points(vnmap, target_coord, 1970, nsample = 5000)
 
 grid.arrange(p69, p70, ncol = 2)
+ggsave("bomb_6970.png", width = 12, height = 6, 
+       plot = grid.arrange(p69, p70, ncol = 2), device = "png", path = "plot/")
 
 ```
  
-In 1969, Nixon became president with a promise to "somehow" end the war. He ordered more and more U.S. soldiers to withdraw, and tried to push Vietnamization strategy but saw little progress. Facing political pressure at home and the army's dissatifcation in the front, starting from 1970 Nixon sent U.S. troops to the neutral Cambodia, as this had been considered the "sanctuary" of Viet Cong and North Vietnam Army that the U.S. dared not to touch. In 1971, to further support Vietnamization:
+ 
+## 1969 - 1972: stagnant in negotiation and miscommunications
+In 1969, Nixon became president with a promise to "somehow" end the war. He ordered more and more U.S. soldiers to withdraw, and tried to push Vietnamization strategy but saw little progress. Facing political pressure at home and the army's dissatisfaction in the front, starting from 1970 Nixon sent U.S. troops to the neutral Cambodia, as this had been considered the "sanctuary" of Viet Cong and North Vietnam Army that the U.S. dared not to touch. In 1971, to further support Vietnamization:
 
-*Heavy U.S. air attacks continued against Communist supply lines in Laos and Cambodia, and so‐called protective‐reaction strikes hit military targets north of the Demilitarized Zone and near Hanoi and its port city of Haiphong.*
+*"Heavy U.S. air attacks continued against Communist supply lines in Laos and Cambodia, and so‐called protective‐reaction strikes hit military targets north of the Demilitarized Zone and near Hanoi and its port city of Haiphong."*
 
 We can clearly see bombing targets shifted to Cambodia and Laos, as well as area around 17th parallel.
 
 ```{r, include=TRUE, fig.height=6, fig.width=6, fig.align="center"}
-p71 = plot_bomb_points(vnmap, target_coord, 1971, nsample = 5000)
-p71
+plot_bomb_points(vnmap, target_coord, 1971, nsample = 5000)
+ggsave("bomb_1971.png", width = 6, height = 6, device = "png", path = "plot/")
+
 ```
 
 In 1972 U.S. bombed Hanoi and Hai Phong again. This is the year of "Christmas bombing", which is a series of bombings which was considered "heaviest in the war to date." The reasons for this escalation is multi-layered, and as far as I understand, this is a huge confusing mess. 
 
 North Vietnam and the U.S. had been in secret peace negotiations since 1968 but had several deadlocks. For three years, North Vietnam maintained their requirement that the U.S. needed to bring Thieu down and replace him with someone more "acceptable" in the North's point of view. At the same time, the U.S. demanded North Vietnam Army to withdraw completely from the South. In 1972, Le Duc Tho and Henry Kissinger in Paris finally made progress in the negotiation. The U.S. accepted a cease-fire as a precondition for its withdrawal without requiring the North to do the same.
 
-Howerver, the situation quickly became chaotic. This agreement was made without the knowledge of Nguyen Van Thieu. When Thieu was presented with the draft of that agreement, he was furious and refused to accept it. On October 24th 1972, Thieu made a broadcast "emphasized that the South Vietnamese could not agree to the Communist proposal for cease‐fire in place before a political settlement." Hanoi was flabbergasted and believed they were deceived by Kissinger. On October 26th 1972 they also broadcasted the key details of the agreement made with the U.S. 
+Howerver, the situation quickly became chaotic as this agreement was made without the knowledge of Nguyen Van Thieu. When Thieu was presented with the draft of that agreement, he was furious and refused to accept it. On October 24th 1972, Thieu made a broadcast "emphasized that the South Vietnamese could not agree to the Communist proposal for cease‐fire in place before a political settlement." Because of this, Hanoi believed they were deceived by Kissinger. On October 26th 1972 they also broadcasted the key details of the agreement made with the U.S. 
 
 At the moment Nixon was facing major pressure to bring the war to an end. He pressed Thieu to accept the aggreement even though his demands would not been met. Nixon assured to provide South Vietnam supports in case the North attacks, and to demonstrate his seriousness, Nixon ordered operation Linebacker II to bomb Hanoi and Hai Phong from December 18th to 30th (thus the name "Christmas Bombing"). The purpose of this move is also to force Hanoi to stay at the table - meaning to prevent Hanoi from abandoning negotiation and seek total victory. During this operation, the U.S. also suffered the heaviest B-52 loss in the war (Aircrafts used in different periods of the war is also a topic that I will investigate in later posts.)
 
-At around Christmas (Dec 25th - 26th) Hanoi proposed a resumption of peace talk on January 8th, and U.S. bombings completely stopped on Dec 30th. However, the motive of the bombing halt is reported differently Hanoi - it claimed that this was a victory over the U.S., and the U.S. withdrew due to the loss inflicted by North Vietnam's Army. In either way, I still think that this ceasefire can be considered a victory for  Vietnamese people. In this Linebacker II operation alone, they already lost too much.
+At around Christmas (Dec 25th - 26th) Hanoi proposed a resumption of peace talk on January 8th, and U.S. bombings completely stopped on Dec 30th. However, the motive of the bombing halt is reported differently Hanoi - it claimed that this was a victory over the U.S., and the U.S. withdrew due to the loss inflicted by North Vietnam's Army. In either way, I still think that this ceasefire can be considered a victory for Vietnamese people. In this Linebacker II operation alone, they already lost too much.
 
 ```{r, fig.height=6, fig.width=6, fig.align="center", include=TRUE}
 plot_bomb_points(vnmap, target_coord, 1972, nsample = 5000)
-plot_bomb_points(vnmap, target_coord, 1973, nsample = 5000)
+ggsave("bomb_1972.png", width = 6, height = 6, device = "png", path = "plot/")
 
 ```
 
+In this map we clearly see bombing activities intensified in Hanoi and Haiphong again.
+
+Let's do a quick recap by putting all bombing maps into a nice GIF image:
 
 ```{r}
+target_coord = target_coord[order(msnyear)]
 
-bombing[, msnmonth := month(msndate)]
+years = c(1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972)
 
-bomb_1972 = bombing[msnyear == 1972 & mfunc_desc_class == "KINETIC", .(
-    atk_count = .N
-    , bomb_tonnage = sum(weapontypeweight * numweaponsdelivered)
-    , b52_use = sum(grepl("B52", aircraft_root))
-), by = .(msnmonth, msnmonthname)]
+target_df = data.table()
+for (year in years){
+    tmp = target_coord[mfunc_desc_class == "KINETIC"
+            & lon >= 102 &  lon <= 112
+            & lat >= 10 & lat <= 23 
+            & msnyear == year]
+    tmp = tmp[sample(1:nrow(tmp), 10000)]
+    target_df = rbind(target_df, tmp)
+}
 
-bomb_1972[, msnmonthname := reorder(msnmonthname, msnmonth)]
+label_df = data.table(
+    x = 110
+    , y = 17
+    , msnyear = years
+)
 
-ggplot(bomb_1972, aes(x = msnmonthname, y = b52_use)) + 
-    geom_bar(stat = "identity")
+    
+bomb_map = vnmap +
+    geom_point(data = target_df, aes(x = lon, y = lat), size = 0.1, col = "red") +
+    geom_label(data = label_df, aes(x = x, y = y, label = msnyear), col = "gray30", size = 10) + 
+    geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.7, color = "gray") +
+    geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.7, color = "gray") + 
+    scale_color_manual(values = target_col) + 
+    scale_fill_gradient(low = "green2", high = "red2") + 
+    scale_alpha(guide = F) + 
+    scale_x_continuous(breaks = seq(102, 114, 1)) + 
+    scale_y_continuous(breaks = seq(10, 22, 1)) + 
+    # exit_disappear() +
+    labs(x = "", y = "") + 
+    transition_manual(frames = msnyear) +
+    ease_aes("linear") +
+    theme(
+        panel.background = element_blank()
+        , axis.ticks = element_blank()
+        , axis.line = element_line(size = 0.1, color = "gray")
+        , axis.text = element_text(size = 15)
+    )
+# bomb_map_anim = animate(bomb_map, width = 700, height = 700)
+# bomb_map_anim
+# anim_save("bomb_map.gif", bomb_map_anim, path = "plot/")
+
 ```
 
+<center> ![](plot/bomb_map.gif) </center>
 
+
+In 1973, the U.S. stopped bombing the North completely as peace talk with Vietnam in Paris achieved breakthroughs. The rest of the story is basically what you have known: on April 30th 1975 the liberation army occupied the Independence Palace, and:
+
+*"the last remaining Americans abandoned the U.S. embassy in Saigon in a dramatic rooftop evacuation by helicopters."*
+
+
+```{r, fig.height=6, fig.width=6, fig.align="center", include=TRUE}
+plot_bomb_points(vnmap, target_coord[lon >= 101.7], 1973, nsample = 5000)
+ggsave("bomb_1973.png", width = 6, height = 6, device = "png", path = "plot/")
+
+```
 
 ***
 
-War story has never been a pretty and noble one. While digging through articles to make this, I found unpleasant information about both sides of the war. 
+War story has never been a pretty one. Digging through articles to make this presentation is like openning a can of worms that can eat your souls. However, I did learn a lot about this war by digging through this dataset instead of doing pure reading. I will comeback with some more posts, and these are the topics that I may touch upon:
+
+- Bombing strategy changes in some well-known operations: Rolling Thunder, Barrel Roll, Steel Tiger (I do not understand why there is no mentioning of Linebacker in this dataset)
+- Use of aircraft and bomb types (weapon types) throught out the years
+- ... and more!
 
 # References
 

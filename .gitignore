@@ -2,3 +2,4 @@ data/*
 .Rhistory
 .Rproj*
 .Rproj.user
+plot/*
