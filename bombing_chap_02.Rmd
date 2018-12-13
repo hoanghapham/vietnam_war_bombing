@@ -1,0 +1,197 @@
+---
+title: "VIetnam Bombing History - Chapter 2"
+author: "Ha Pham"
+output: html_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+source("config/config_pj.R")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+thunder = fread("data/processed/bombing_rolling_thunder.csv")
+vnmap = readRDS("data/raw/vnmap.rds")
+north_map = readRDS("data/raw/north_map.rds")
+
+replace_missing(thunder)
+thunder[, msndate := ymd(msndate)]
+```
+
+Next:
+change of war / bombing strategy throughout the years 
+big operations:
+Rolling Thunder
+
+Next: Barrel Roll, Steel Tiger
+
+# Context: 
+
+The operation lasted from 02/03/1965 - 02/11/1968. Objectives (evolve over time): 
+
+- Boost Saigon's morale at first, not to directly and severely affect Hanoi. The U.S. wanted to demonstrate their commitment towards South Vietnam's government.
+- Persuade North Vietnam to stop supporting South Vietnam's communist insurgency withouth sending ground force into North Vietnam
+- Destroy North Vietnam's transport system, industrial base, air defenses <-- IMPORTANT
+- Halt the flow of men and material from North to South Vietnam <-- IMPORTANT
+
+Planning for the operation started from March 1964. At first, it was proposed as an 8-week air campaign which would escalate in 3 stages. Bridges, rail yards, docks, barracks and supply dumps were all targeted, and targets are selected if the attack could produce these effects:
+
+    - reducing North Vietnamese support of communist operations in Laos and South Vietnam, 
+    - limiting North Vietnamese capabilities to take direct action against Laos and South Vietnam, 
+    - impairing North Vietnam’s capacity to continue as an industrially viable state.
+
+The target list was kept in secret. Reason for the slow escalation was to gauge China and Soviet's reaction. If these two powerhouses responded to the escalation, the U.S. could de-escalate the bombings to avoid their total retaliation. If they went for a total assault of the North, the reaction would be instant and total.
+
+During 1964, no concrete action were taken and the plan was not realized. However, in March 1965, attacks from Viet Cong intensified and the U.S. had to launch reprisal raids. These action led to the reconsideration of using sustained air campaigns. 
+
+```{r}
+
+north_center = c(105.5, 20)
+# north_map <- ggmap(get_googlemap(center = north_center, scale = 2, zoom = 6, maptype = "roadmap"), extent = "normal")
+
+target_coord <- thunder[mfunc_desc_class == "KINETIC", .(msnyear, mfunc_desc_class, 
+                            lon = tgt_lon, 
+                            lat = tgt_lat, 
+                            milservice)] %>% unique()
+
+force_col = c(
+    "USAF" = "dodgerblue4"
+    , "USN" = "darkgoldenrod3"
+    , "USMC" = "red3"
+    , "VNAF" = "royalblue3"
+    , "RLAF" = "gray"
+    , "RAAF" = "gray"
+    , "KAF" = "gray"
+    , "USA" = "gray"
+)
+
+```
+
+
+To minimize airspace conflict among air forces, North Vietnam was divided into six target regions called "route packages":
+
+<center> ![](plot/route_packages.gif) </center>
+
+Each region is assigned to one air force or navy, and they are forbidden to intrude each others' regions. The Navy's Carrier Task Force 77 handled operations in RPs 2, 3, 4, and 6B, as these bordered on the Gulf of Tonkin. The Air Force was given RP 1, RP 5, and 6A. We can see this division clearly from the bombing targets:
+
+```{r}
+nsample = 5000
+edges = round(north_map$data)
+    grid_x = seq(edges$lon[1], edges$lon[2], 1)
+    grid_y = seq(edges$lat[1], edges$lat[3], 1)
+    
+target_df <- target_coord %>% 
+    filter(
+        mfunc_desc_class == "KINETIC"
+        , lon >= edges$lon[1],  lon <= edges$lon[2]
+        , lat >= edges$lat[1], lat <= edges$lat[3]
+        , milservice %in% c("USN", "USAF")
+    ) %>% 
+    sample_n(nsample)    
+
+label_df = data.table(
+    x = c(107.5, 109)
+    , y = c(19, 17)
+    , label = c("US Navy", "US Air Force")
+)
+
+thunder_map = north_map +
+    geom_point(data = target_df, aes(x = lon, y = lat, col = milservice), size = 0.1, show.legend = F) +
+    geom_vline(xintercept = grid_x, size = 0.1, alpha = 0.7, color = "gray") +
+    geom_hline(yintercept = grid_y, size = 0.1, alpha = 0.7, color = "gray") + 
+    geom_label(data = label_df[1], aes(x = x, y = y, label = label), col = "white", fill = force_col["USN"]) +
+    geom_label(data = label_df[2], aes(x = x, y = y, label = label), col = "white", fill = force_col["USAF"]) +
+    scale_color_manual(values = force_col, name = NULL) +
+    scale_x_continuous(breaks = grid_x) + 
+    scale_y_continuous(breaks = grid_y) + 
+    ggtitle("Rolling Thunder Bombing map 1965 - 1968") + 
+    labs(x = "", y = "") + 
+    theme(
+        panel.background = element_blank()
+        , axis.ticks = element_blank()
+        , axis.line = element_line(size = 0.1, color = "gray")
+    ) 
+```
+
+```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
+
+print(thunder_map)
+
+```
+
+
+# Start of the campaign
+
+At the beginning of the operation, Washington believed in "gradualism", which considered "the threat of destruction is a better signal of U.S.' determination than the destruction itself". This translated into the the U.S. strategy to "hold important target hostage by bombing trivial ones". Washington dictated every details of the attacks: target, day, hour, type of aircraft, tonnage of bombing, weapons... Johnson tightly control the campaign, refused to attack Hai Phong port directly and he deemed it "too provocative". 
+
+***Airstrikes were strictly forbidden within 30 nautical miles (60 km) of Hanoi and within ten nautical miles (19 km) of the port of Haiphong. A thirty-mile buffer zone also extended along the length of the Chinese frontier.***
+
+We can clearly see this in the bombing map of 1965:
+
+
+```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
+rt65 = plot_bomb_points(north_map, target_coord, 1965, nsample = 2000, plot_title = "Rolling Thunder target map - 1965")
+
+rt65 + 
+    annotate("label", x = 108, y = 21, label = "Hanoi & Haiphong\nwere spared", hjust = 0, alpha = 0.8)  + 
+    annotate("rect", xmin = 105.5, xmax = 107, ymin = 20.5, ymax = 21.5, alpha = 0.3, size = 15)
+
+```
+
+*continue here*
+
+According to air force historian Earl Tilford:
+
+***"Targeting bore little resemblance to reality in that the sequence of attacks was uncoordinated and the targets were approved randomly – even illogically. The North's airfields, which, according to any rational targeting policy, should have been hit first in the campaign, were also off-limits."***
+
+
+
+On 3 April the Joint Chiefs persuaded McNamara and Johnson to launch a four-week attack on North Vietnam's lines of communications, which would isolate the country from its overland sources of supply in the PRC and the Soviet Union. 
+
+- 1/3 of the North's supply came from North-East railroad connecting to China --> Bombing intensity on rail roads?
+- the remaining 2/3 came by sea, mostly through Hai Phong 
+
+For the first time in the campaign, targets were to be chosen for their military, rather than their psychological, significance.
+
+*During the four weeks, 26 bridges and seven ferries were destroyed* --> confirm
+*Other targets included the extensive North Vietnamese radar system, barracks, and ammunition depots.*
+
+```{r}
+# Look at target type
+```
+
+
+Number of sorties from April to May
+Slow move from fixed targets mission to "armed reconnaissance", meaning small aircraft formations patrolled highways, railroads, rivers searching for targets of opportunity. This type of mission constituted 75% of total bombing effort because system to request fixed targets are too complicated. 
+
+
+
+# Changing priorities and POL strikes 
+
+On 29 June 1965, airstrikes against the North's petroleum, oil, and lubricants (POL) storage areas were finally authorized by Johnson after being put down since the beginning of the operation. Howerver, North Vietnam's army anticipated this move and spread their POL reservoir across the whole country. By 4 September 1965, POL strikes was halted as U.S. intelligence realized that the North suffered no POL shortage.
+
+```{r}
+# Look at target type. Change of amount of POL target type 
+```
+
+
+# Results
+*By 24 December 1965, 170 U.S. aircraft had been lost during the campaign (85 Air Force, 94 Navy, and one Marine Corps). Eight VNAF aircraft had also been lost. Air force aircrews had flown 25,971 sorties and dropped 32,063 tons of bombs. Naval aviators had flown 28,168 sorties and dropped 11,144 tons. The VNAF had contributed 682 missions with unknown ordnance tonnages.*
+
+*Between March 1965 and November 1968, aircraft of the U.S. Air Force had flown 153,784 attack sorties against North Vietnam, while the Navy and Marine Corps had added another 152,399.[110] On 31 December 1967, the Department of Defense announced that 864,000 tons of American bombs had been dropped on North Vietnam during Rolling Thunder, compared with 653,000 tons dropped during the entire Korean War and 503,000 tons in the Pacific theater during the Second World War*
+
+# Problems with the operation
+*Another problem exposed by Rolling Thunder was the unpreparedness of the Air Force for the operations it was undertaking. Its aircraft had been designed and its pilots trained for strategic operations against the Soviet Union – for nuclear, not conventional war. The new campaign exposed years of neglect in conventional tactics, while aircraft capabilities and armament were ill-suited to the task at hand.*
+
+*The Air Force was also embarrassed by the fact that the Navy was better prepared. It possessed the only all-weather bomber in the U.S. inventory in the new A-6 Intruder and was also responsible for the development of the F-4 Phantom fighter-bomber, which became ubiquitous during the Vietnam War.* --> Prove this. Type of aircraft used by forces? 
+
+*Once air-to-air combat began over North Vietnam, the Air Force was again found lacking. The mainstay missiles of the air war turned out to be the Navy-developed AIM-9 Sidewinder and AIM-7 Sparrow, not its own AIM-4 Falcon* --> types of weapon used by forces and their use over the operation duration
+
+*Lack of adequate all-weather and night-bombing capability made it necessary for the majority of U.S. missions to be conducted during daylight hours, thereby easing the burden on the air defense forces of North Vietnam* --> operation time? what is all-weather aircraft?
+
+*"...captured documents showed that the North Vietnamese had at least thirty to forty-five minutes' warning of 80 to 90 per cent of Rolling Thunder missions."* 
+
+*The North Vietnamese signals intelligence staff of 5,000 "proved adept at exploiting traffic analysis as NSA was. Every U.S. bombing mission was preceded by an upsurge of traffic involving logistics, ordnance loading, weather flights, and aerial refueling tankers, and even if none of the content of the signals was readable, the pattern was a dead giveaway."* --> Check these patterns
+
