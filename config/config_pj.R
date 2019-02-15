@@ -8,6 +8,8 @@ pkg_list = c(
     , "knitr"
     , "gridExtra"
     , "gganimate"
+    , "stringi"
+    , "plotly"
 )
 
 script_list = c(
@@ -20,3 +22,7 @@ for (script in script_list)
 }
 
 load_libraries(pkg_list)
+
+# Turn on plotly
+Sys.setenv("plotly_username"="hoanghapham")
+Sys.setenv("plotly_api_key"="9TsLOjDB7ownFi05uscy")

@@ -15,7 +15,7 @@ names(data_raw) <-gsub("tgtlonddd_ddd_wgs84", "tgt_lon", names(data_raw))
 data_raw[msndate == "19700229", msndate := "19700228"]
 data_raw[, msndate := ymd(msndate)]
 data_raw[, msnyear := year(msndate)]
-data_raw[, msnym := strftime(msndate, "%Y%m")]
+data_raw[, msnym := round_date(msndate, "month")]
 data_raw[, msnmonthname := month(msndate, label = T, abbr = T)]
 
 data_raw[, timeontarget := sprintf("%04d", timeontarget)]
@@ -84,8 +84,8 @@ drop_cols = c(
     , "tgtorigcoords"
     , "additionalinfo"
     , "mfunc"
-    , "timeontarget"
-    , "timeofftarget"
+    # , "timeontarget"
+    # , "timeofftarget"
     , "hourontarget"
     , "hourofftarget"
     , "valid_aircraft_root"
@@ -102,7 +102,7 @@ data_raw[, operation_grp := gsub("YANKEE$", "YANKEETEAM", operation_grp)]
 
 # Aircraft type
 aircrafts <- fread("data/raw/THOR_Vietnam_Aircraft_Glossary.csv", 
-                   select = c("VALIDATED_ROOT", "AIRCRAFT_APPLICATION"))
+                   select = c("VALIDATED_ROOT", "AIRCRAFT_APPLICATION", "AIRCRAFT_TYPE"))
 
 names(aircrafts) <- names(aircrafts) %>% tolower()
 aircrafts[, validated_root := gsub("-", "", validated_root)]
@@ -120,7 +120,8 @@ data_raw <- merge(data_raw, weapons, by = "weapontype", all.x = T)
 # View(table(data_raw$weapon_class))
 
 # Save data ---------------------------------------------------------------
-fwrite(data_raw, "data/processed/bombing.csv")
+fwrite(data_raw, "data/processed/bombing.csv", row.names = F)
 
+fwrite(data_raw[operation_grp == "ROLLINGTHUNDER"], "data/processed/bombing_rolling_thunder.csv", row.names = F)
 
 

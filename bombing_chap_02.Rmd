@@ -15,36 +15,55 @@ knitr::opts_chunk$set(echo = TRUE)
 thunder = fread("data/processed/bombing_rolling_thunder.csv")
 vnmap = readRDS("data/raw/vnmap.rds")
 north_map = readRDS("data/raw/north_map.rds")
+aircrafts = fread("data/raw/THOR_Vietnam_Aircraft_Glossary.csv")
+
 
 replace_missing(thunder)
 thunder[, msndate := ymd(msndate)]
+thunder[, msnym := ymd(msnym)]
+thunder[, delivered_tonnage := weapontypeweight * numweaponsdelivered ]
+thunder[, jettisoned_tonnage := weapontypeweight * numweaponsjettisoned]
+thunder[, returned_tonnage := weapontypeweight * numweaponsreturned]
+
 ```
 
-Next:
-change of war / bombing strategy throughout the years 
-big operations:
-Rolling Thunder
+Rolling Thunder is an interesting operation to investigate, because the bombing strategy changes over time. 
 
-Next: Barrel Roll, Steel Tiger
+A little bit of background: 
 
-# Context: 
+After Geneva conference in 1954, the U.S. replaces France as a political backup for Ngo Dinh Diem in the South Vietnam, as it feared if Vietnam were fall under the influence of communism, all countries around would follow. At first, the U.S. believed that it could grow South Vietnam's government into a self-sustained one. However, by the beginning of 1965, that belief was turned around when they realized that "without further American action, Saigon government could not survive." 
 
-The operation lasted from 02/03/1965 - 02/11/1968. Objectives (evolve over time): 
+Operation Rolling Thunder was devised as a demonstration of U.S. commitment with Saigon. 
 
-- Boost Saigon's morale at first, not to directly and severely affect Hanoi. The U.S. wanted to demonstrate their commitment towards South Vietnam's government.
-- Persuade North Vietnam to stop supporting South Vietnam's communist insurgency withouth sending ground force into North Vietnam
-- Destroy North Vietnam's transport system, industrial base, air defenses <-- IMPORTANT
-- Halt the flow of men and material from North to South Vietnam <-- IMPORTANT
+The operation lasted from 02/03/1965 - 02/11/1968. Objectives. 
 
-Planning for the operation started from March 1964. At first, it was proposed as an 8-week air campaign which would escalate in 3 stages. Bridges, rail yards, docks, barracks and supply dumps were all targeted, and targets are selected if the attack could produce these effects:
+- Boost Saigon's morale at first, not to directly and severely affect Hanoi. 
+- Persuade North Vietnam to stop supporting South Vietnam's communists withouth sending ground force into North Vietnam
+- Destroy North Vietnam's transport system, industrial base, air defenses, which in effect will cut off the supporting line from North to South.
 
-    - reducing North Vietnamese support of communist operations in Laos and South Vietnam, 
-    - limiting North Vietnamese capabilities to take direct action against Laos and South Vietnam, 
-    - impairing North Vietnam’s capacity to continue as an industrially viable state.
+What is interesting here is that the U.S. tried to tread on thin ice here. They want to scare North Vietnam off the South, but they did not dare to go for a full-blown air campaign lest China or Soviet would retaliate with their full might. Therefore, their bombing strategy slowly escalated and changed over time, which will reflect to the data.
 
-The target list was kept in secret. Reason for the slow escalation was to gauge China and Soviet's reaction. If these two powerhouses responded to the escalation, the U.S. could de-escalate the bombings to avoid their total retaliation. If they went for a total assault of the North, the reaction would be instant and total.
+# Overview
 
-During 1964, no concrete action were taken and the plan was not realized. However, in March 1965, attacks from Viet Cong intensified and the U.S. had to launch reprisal raids. These action led to the reconsideration of using sustained air campaigns. 
+Some numbers first
+
+Delivered tonnage:
+
+```{r}
+sum(thunder$delivered_tonnage) %>% comma()
+```
+
+Number of aircraft types
+
+
+```{r}
+uniqueN(thunder$aircraft_root)
+```
+
+
+
+Overview of bombing targets
+
 
 ```{r}
 
@@ -121,15 +140,28 @@ print(thunder_map)
 
 ```
 
+Bombing intensity throughout the years
 
-# Start of the campaign
+```{r}
+month_aggr = thunder[, .(
+    total_tonnage = sum(delivered_tonnage)
+    , sortie_count = .N
+    ), by = .(msnyear, msnmonth = round_date(msndate, "month"))]
 
-At the beginning of the operation, Washington believed in "gradualism", which considered "the threat of destruction is a better signal of U.S.' determination than the destruction itself". This translated into the the U.S. strategy to "hold important target hostage by bombing trivial ones". Washington dictated every details of the attacks: target, day, hour, type of aircraft, tonnage of bombing, weapons... Johnson tightly control the campaign, refused to attack Hai Phong port directly and he deemed it "too provocative". 
+ggplot(month_aggr) + 
+    geom_line(aes(x = msnmonth, y = total_tonnage))
 
-***Airstrikes were strictly forbidden within 30 nautical miles (60 km) of Hanoi and within ten nautical miles (19 km) of the port of Haiphong. A thirty-mile buffer zone also extended along the length of the Chinese frontier.***
+```
 
-We can clearly see this in the bombing map of 1965:
 
+```{r}
+ggplot(month_aggr) + 
+    geom_line(aes(x = msnmonth, y = sortie_count))
+
+```
+
+
+We do not have data before Oct 1965, but we can clearly see Hanoi and Hai Phong were bombed less severly because of U.S.' initial hesitation 
 
 ```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
 rt65 = plot_bomb_points(north_map, target_coord, 1965, nsample = 2000, plot_title = "Rolling Thunder target map - 1965")
@@ -140,58 +172,183 @@ rt65 +
 
 ```
 
-*continue here*
-
-According to air force historian Earl Tilford:
-
-***"Targeting bore little resemblance to reality in that the sequence of attacks was uncoordinated and the targets were approved randomly – even illogically. The North's airfields, which, according to any rational targeting policy, should have been hit first in the campaign, were also off-limits."***
 
 
+Density, for better visualization
 
-On 3 April the Joint Chiefs persuaded McNamara and Johnson to launch a four-week attack on North Vietnam's lines of communications, which would isolate the country from its overland sources of supply in the PRC and the Soviet Union. 
+```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
+plot_bomb_dens_year(north_map, target_coord, 1965, nsample = 2000)
+```
 
-- 1/3 of the North's supply came from North-East railroad connecting to China --> Bombing intensity on rail roads?
-- the remaining 2/3 came by sea, mostly through Hai Phong 
-
-For the first time in the campaign, targets were to be chosen for their military, rather than their psychological, significance.
-
-*During the four weeks, 26 bridges and seven ferries were destroyed* --> confirm
-*Other targets included the extensive North Vietnamese radar system, barracks, and ammunition depots.*
+# How do bombing target strategy change
 
 ```{r}
-# Look at target type
+tgt_dispersion = thunder[, .(
+    sd_lat = sd(tgt_lat, na.rm = T)
+    , sd_lon = sd(tgt_lon, na.rm = T)
+    
+    , range_lat = range(tgt_lat, na.rm = T)[2] - range(tgt_lat, na.rm = T)[1]
+    , range_lon = range(tgt_lon, na.rm = T)[2] - range(tgt_lon, na.rm = T)[1]
+    
+    , iqr_lat = IQR(tgt_lat, na.rm = T)
+    , iqr_lon = IQR(tgt_lon, na.rm = T)
+), by = .(msn_month = round_date(msndate, "month"))]
+
+
+```
+
+At first latitude's SD is quite large but then drop --> first random by latitude?
+at first longitude's SD is small but then increase --> expand target to different regions in 1969?
+
+Rolling Thunder reached the last stage of its operational evolution during 1967 and 1968. The chief purpose of the American air effort in the higher Route Packages of North Vietnam was slowly transformed into that of interdicting the flow of supplies and material and the destruction of those segments of the north's infrastructure that supported its military effort
+
+1966: bomb on higher route packages to scare the north, thus low longitude variation, high latitude (horizontal) variation
+1968 onward: bomb lower route packages (panhandle), thus longitude variation increases
+
+```{r}
+ggplot(tgt_dispersion[msn_month >= '1966-01-01'], aes(x = msn_month)) + 
+    geom_line(aes(y = sd_lat, group = 1), stat = "identity", color = "red") + 
+    geom_line(aes(y = sd_lon, group = 1), stat = "identity", color = "blue") 
+
 ```
 
 
-Number of sorties from April to May
-Slow move from fixed targets mission to "armed reconnaissance", meaning small aircraft formations patrolled highways, railroads, rivers searching for targets of opportunity. This type of mission constituted 75% of total bombing effort because system to request fixed targets are too complicated. 
-
-
-
-# Changing priorities and POL strikes 
-
-On 29 June 1965, airstrikes against the North's petroleum, oil, and lubricants (POL) storage areas were finally authorized by Johnson after being put down since the beginning of the operation. Howerver, North Vietnam's army anticipated this move and spread their POL reservoir across the whole country. By 4 September 1965, POL strikes was halted as U.S. intelligence realized that the North suffered no POL shortage.
+Coordinate ranges (max - min) is lower, which could means more focused bombing.
 
 ```{r}
-# Look at target type. Change of amount of POL target type 
+ggplot(tgt_dispersion[msn_month >= '1966-07-01'], aes(x = msn_month)) + 
+    geom_line(aes(y = range_lat, group = 1), stat = "identity", color = "red") + 
+    geom_line(aes(y = range_lon, group = 1), stat = "identity", color = "blue") 
+
+```
+
+More on this change of bombing strategy later.
+
+# The gradual escalation
+
+Bombing tonnage in Rolling Thunder increases gradually year-by-year and peaked in 1968, which is why it was described as the bloodiest year in this war.
+
+```{r}
+tonnage_time = thunder[, .(total_tonnage = sum(delivered_tonnage)), by = .(msnym)]
+
+ggplot(tonnage_time) + 
+    geom_line(aes(x = msnym, y = total_tonnage, group = 1)) + 
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y")
+
 ```
 
 
-# Results
-*By 24 December 1965, 170 U.S. aircraft had been lost during the campaign (85 Air Force, 94 Navy, and one Marine Corps). Eight VNAF aircraft had also been lost. Air force aircrews had flown 25,971 sorties and dropped 32,063 tons of bombs. Naval aviators had flown 28,168 sorties and dropped 11,144 tons. The VNAF had contributed 682 missions with unknown ordnance tonnages.*
+# Aircraft use by Military services
 
-*Between March 1965 and November 1968, aircraft of the U.S. Air Force had flown 153,784 attack sorties against North Vietnam, while the Navy and Marine Corps had added another 152,399.[110] On 31 December 1967, the Department of Defense announced that 864,000 tons of American bombs had been dropped on North Vietnam during Rolling Thunder, compared with 653,000 tons dropped during the entire Korean War and 503,000 tons in the Pacific theater during the Second World War*
+Looking at aircraft application, fighter - bomber, fighter, attack aircrafts are used most and delivered the highest tonnage of weapon.
 
-# Problems with the operation
-*Another problem exposed by Rolling Thunder was the unpreparedness of the Air Force for the operations it was undertaking. Its aircraft had been designed and its pilots trained for strategic operations against the Soviet Union – for nuclear, not conventional war. The new campaign exposed years of neglect in conventional tactics, while aircraft capabilities and armament were ill-suited to the task at hand.*
+```{r}
+aircraft_app_ttl = thunder[!is.na(aircraft_application), .(
+    count = .N
+    , mission_count = uniqueN(missionid)
+    , total_tonnage = sum(delivered_tonnage)
+    ), by = .(aircraft_application)][order(aircraft_application, -count)]
 
-*The Air Force was also embarrassed by the fact that the Navy was better prepared. It possessed the only all-weather bomber in the U.S. inventory in the new A-6 Intruder and was also responsible for the development of the F-4 Phantom fighter-bomber, which became ubiquitous during the Vietnam War.* --> Prove this. Type of aircraft used by forces? 
+ggplot(aircraft_app_ttl) + 
+    geom_bar(aes(x = reorder(aircraft_application, count), y = count), stat = "identity") + 
+    coord_flip()
+```
 
-*Once air-to-air combat began over North Vietnam, the Air Force was again found lacking. The mainstay missiles of the air war turned out to be the Navy-developed AIM-9 Sidewinder and AIM-7 Sparrow, not its own AIM-4 Falcon* --> types of weapon used by forces and their use over the operation duration
+For each of these aircraft, BOMB is still the most used weapon. The percentage of air-to-air weapon used by fighter aircrafts is higher than that of bombers.
 
-*Lack of adequate all-weather and night-bombing capability made it necessary for the majority of U.S. missions to be conducted during daylight hours, thereby easing the burden on the air defense forces of North Vietnam* --> operation time? what is all-weather aircraft?
+```{r}
+aircraft_wtype_ttl = thunder[!is.na(aircraft_application) & !is.na(weapon_class), .(
+    count = .N
+    , total_tonnage = sum(delivered_tonnage)
+    ), by = .(aircraft_application, weapon_class)][order(aircraft_application, -count)]
+aircraft_wtype_ttl[, pct := count / sum(count), by = .(aircraft_application)]
 
-*"...captured documents showed that the North Vietnamese had at least thirty to forty-five minutes' warning of 80 to 90 per cent of Rolling Thunder missions."* 
+display_ac = c("FIGHTER, BOMBER", "FIGHTER", "ATTACK", "CARRIER, FIGHTER", "TACTICAL, BOMBER", "STRATEGIC, BOMBER")
 
-*The North Vietnamese signals intelligence staff of 5,000 "proved adept at exploiting traffic analysis as NSA was. Every U.S. bombing mission was preceded by an upsurge of traffic involving logistics, ordnance loading, weather flights, and aerial refueling tankers, and even if none of the content of the signals was readable, the pattern was a dead giveaway."* --> Check these patterns
+ggplot(aircraft_wtype_ttl[aircraft_application %in% display_ac]) + 
+    geom_bar(aes(x = aircraft_application, y = pct, fill = weapon_class)
+             , position = position_stack(), stat = "identity") + 
+    coord_flip()
 
+```
+
+What's the use of different aircrafts over time?
+
+ATTACK is use more and more, indicating more precise bombing missions. Pure fighter aircrafts used less or were adapted into fighter - bomber roles because by this time dogfighting (air-to-air combat) were fallen out of favor in the U.S. This is due their belief that missiles were all they needed to shoot down Soviet's heavy bombers. (Official dogfight training only returned by 1969 with the TOPGUN program.) 
+
+```{r}
+
+aircraft_app_time = thunder[!is.na(aircraft_application), .(
+    count = .N
+    , total_tonnage = sum(delivered_tonnage)
+    ), by = .(aircraft_application, msnym)][order(-count)]
+
+
+ap = ggplot(aircraft_app_time) + 
+    geom_line(aes(x = msnym, y = total_tonnage, group = aircraft_application, color = aircraft_application))
+
+ggplotly(ap)
+
+```
+
+Which aircraft were used in each application?
+
+```{r}
+aircraft_use_ttl = thunder[!is.na(aircraft_application), .(
+    count = .N
+    , total_delivered = sum(delivered_tonnage)
+    , total_jettisoned = sum(jettisoned_tonnage)
+    , total_returned = sum(returned_tonnage)
+    
+    ), by = .(aircraft_root, aircraft_type, aircraft_application, milservice)][order(aircraft_application, -count)]
+
+top_aircrafts = aircraft_use_ttl[, head(.SD, 2), by = .(aircraft_application, milservice)]
+
+```
+
+
+```{r}
+aircraft_use_time = thunder[aircraft_root %in% top_aircrafts$aircraft_root, .(
+    count = .N
+    , total_delivered = sum(delivered_tonnage)
+    , total_jettisoned = sum(jettisoned_tonnage)
+    , total_returned = sum(returned_tonnage)
+    , mission_count = uniqueN(missionid)
+    ), by = .(aircraft_root, aircraft_application, msnym)]
+
+```
+
+```{r}
+
+pa2 = ggplot(aircraft_use_time) + 
+    geom_line(aes(x = msnym, y = mission_count, group = aircraft_root, color = aircraft_root)) +
+    facet_wrap(~aircraft_application, scales = "free")
+
+ggplotly(pa2)
+
+```
+
+
+On 2 January 1967, the Americans sprang a surprise on the MiGs when they launched Operation Bolo
+
+The U.S. Air Force and the US Navy continued to lay down great expectations on the F4 Phantom, assuming that the massive arms, the perfect on-board radar, the highest speed and acceleration properties, coupled with the new tactics would provide "Phantoms" an advantage over the MiGs. But in encounters with lighter VPAF's MiG-21, F-4 began to suffer defeat. From May to December 1966, the U.S lost 47 aircraft in air battles, destroying only 12 enemy's fighters[90]
+
+
+# Which military services fly the most mission?
+
+U.S. Navy flew the most missions.
+
+```{r}
+milservices_count = thunder[, .(count = .N), by = .(milservice)][order(-count)]
+```
+
+And mostly they used A-4 Skyhawks
+
+```{r}
+service_aircraft = thunder[, .(count = .N), by = .(milservice, aircraft_root)]
+
+ggplot(service_aircraft) + 
+    geom_bar(aes(x = milservice, y = count, fill = aircraft_root)
+             , position = position_stack(), stat = "identity")
+
+```

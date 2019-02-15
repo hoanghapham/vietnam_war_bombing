@@ -87,3 +87,58 @@ View(bombing[weapontype != "", .(weapontype, weapontypeweight, weaponsloadedweig
 # https://www.kaggle.com/usaf/world-war-ii
 # What happened in 1972?
 # Plot bom tonnage by area
+
+
+
+# Rolling Thunder ---------------------------------------------------------
+
+thunder = fread("data/processed/bombing_rolling_thunder.csv")
+vnmap = readRDS("data/raw/vnmap.rds")
+north_map = readRDS("data/raw/north_map.rds")
+
+replace_missing(thunder)
+thunder[, msndate := ymd(msndate)]
+
+# Evolution of mission function over time
+
+mfunc_x_time = thunder[mfunc_desc %in% mfunc_popular, .(
+    sortie_count = .N
+    , unique_msn_count = uniqueN(missionid)
+    , total_delivered = sum(delivered_tonnage)
+), by = .(mfunc_desc, msnym)]
+
+p1 = ggplot(mfunc_x_time[msnym >= 196501], aes(x = factor(msnym))) + 
+    geom_line(aes(y = unique_msn_count, group = mfunc_desc, col = mfunc_desc)) 
+
+
+bombing[msnym == 196503, .(operation_grp, operationsupported)] %>% unique()
+
+
+ggplotly(p1)
+
+# Atk hours & surge of activities
+
+atk = thunder[, .(count = .N), by = .(mfunc_desc_class, atk_hour)]
+
+ggplot(atk[atk_hour > 0], aes(x = factor(atk_hour), y = count, group = mfunc_desc_class, col = mfunc_desc_class)) + 
+    geom_line() + 
+    facet_wrap(~mfunc_desc_class, nrow = 2, scales = "free")
+
+
+recce = thunder[str_detect(mfunc_desc, "RECCE"), .(count = .N, msn = uniqueN(missionid)), 
+                by = .(mfunc_desc_class, mfunc_desc, atk_hour)]
+
+p2 = ggplot(recce[atk_hour > 0], aes(x = factor(atk_hour), y = count, group = mfunc_desc, col = mfunc_desc)) + 
+    geom_line() + 
+    facet_wrap(~mfunc_desc_class, nrow = 2, scales = "free")
+
+ggplotly(p2)
+
+# aircraft app vs time
+
+aircraft_stats = thunder[!is.na(aircraft_application) & !is.na(atk_hour), .(
+    count = .N
+), by = .(aircraft_application)]
+
+View(aircraft_stats)
+
