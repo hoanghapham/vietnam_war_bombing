@@ -17,6 +17,7 @@ vnmap = readRDS("data/raw/vnmap.rds")
 north_map = readRDS("data/raw/north_map.rds")
 aircrafts = fread("data/raw/THOR_Vietnam_Aircraft_Glossary.csv")
 
+thunder = thunder[msnym < "1969-01-01"]
 
 replace_missing(thunder)
 thunder[, msndate := ymd(msndate)]
@@ -180,6 +181,20 @@ Density, for better visualization
 plot_bomb_dens_year(north_map, target_coord, 1965, nsample = 2000)
 ```
 
+
+```{r, fig.height=7, fig.width=7, fig.align="center"}
+plot_bomb_dens_year(north_map, target_coord, year = 1966)
+```
+
+```{r, fig.height=7, fig.width=7, fig.align="center"}
+plot_bomb_dens_year(north_map, target_coord, year = 1967)
+```
+
+```{r, fig.height=7, fig.width=7, fig.align="center"}
+plot_bomb_dens_year(north_map, target_coord, year = 1968)
+```
+
+
 # How do bombing target strategy change
 
 ```{r}
@@ -238,11 +253,61 @@ ggplot(tonnage_time) +
 ```
 
 
+# Mission types
+
+Armed recconaiseanse means using small aircraft formations patrolled highways, railroads, rivers searching for targets of opportunity 
+
+```{r}
+mfunc_aggr = thunder[!is.na(mfunc_desc), .(
+    sortie_count = .N
+    , total_tonnage = sum(delivered_tonnage)
+), by = .(mfunc_desc, mfunc_desc_class)]
+
+ggplot(mfunc_aggr[1:10]) + 
+    geom_bar(aes(x = reorder(mfunc_desc, sortie_count), y = sortie_count), stat = "identity") + 
+    coord_flip()
+
+```
+
+
+
+```{r}
+
+mfunc_stats = thunder[!is.na(mfunc_desc), .(
+    sortie_count = .N
+    , unique_msn_count = uniqueN(missionid)
+    , total_delivered = sum(delivered_tonnage)
+    , days_happened_count = uniqueN(msndate)
+), by = .(mfunc_desc_class, mfunc_desc)]
+
+
+
+mfunc_time = thunder[mfunc_desc %in% mfunc_popular, .(
+    sortie_count = .N
+    , mission_count = uniqueN(missionid)
+    , total_delivered = sum(delivered_tonnage)
+), by = .(mfunc_desc, msnym, msnyear)]
+
+
+
+```
+
+At first there are more armed reccon missions, due to "system to request fixed targets are too complicated". Even in the after years this type of mission is still consistantly used, but the strike missions gradually increased due to the escalating bombing efforts.
+
+```{r}
+
+ggplot(mfunc_time[mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
+    geom_line(aes(x = msnym, y = sortie_count, color = mfunc_desc), stat = "identity")
+
+```
+
 # Aircraft use by Military services
 
 Looking at aircraft application, fighter - bomber, fighter, attack aircrafts are used most and delivered the highest tonnage of weapon.
 
 ```{r}
+# Application color
+
 aircraft_app_ttl = thunder[!is.na(aircraft_application), .(
     count = .N
     , mission_count = uniqueN(missionid)
@@ -254,6 +319,10 @@ ggplot(aircraft_app_ttl) +
     coord_flip()
 ```
 
+A fighter-bomber is a fighter aircraft that has been modified, or used primarily, as a light bomber or attack aircraft. It differs from bomber and attack aircraft primarily in its origins, as a fighter that has been adapted into other roles,[1] whereas bombers and attack aircraft are developed specifically for bombing and attack roles.
+
+--> Probably because of this versatility that it was used most
+
 For each of these aircraft, BOMB is still the most used weapon. The percentage of air-to-air weapon used by fighter aircrafts is higher than that of bombers.
 
 ```{r}
@@ -263,14 +332,30 @@ aircraft_wtype_ttl = thunder[!is.na(aircraft_application) & !is.na(weapon_class)
     ), by = .(aircraft_application, weapon_class)][order(aircraft_application, -count)]
 aircraft_wtype_ttl[, pct := count / sum(count), by = .(aircraft_application)]
 
-display_ac = c("FIGHTER, BOMBER", "FIGHTER", "ATTACK", "CARRIER, FIGHTER", "TACTICAL, BOMBER", "STRATEGIC, BOMBER")
+top_application = c("FIGHTER, BOMBER", "FIGHTER", "ATTACK", "CARRIER, FIGHTER", "TACTICAL, BOMBER", "STRATEGIC, BOMBER")
 
-ggplot(aircraft_wtype_ttl[aircraft_application %in% display_ac]) + 
+ggplot(aircraft_wtype_ttl[aircraft_application %in% top_application]) + 
     geom_bar(aes(x = aircraft_application, y = pct, fill = weapon_class)
              , position = position_stack(), stat = "identity") + 
     coord_flip()
 
 ```
+
+```{r}
+aircraft_service_ttl = thunder[!is.na(aircraft_application) & !is.na(milservice), .(
+    sortie_count = .N
+    , total_tonnage = sum(delivered_tonnage)
+    ), by = .(aircraft_application, milservice)]
+
+aircraft_service_ttl[, pct := sortie_count / sum(sortie_count), by = .(aircraft_application)]
+
+ggplot(aircraft_service_ttl[aircraft_application %in% top_application]) + 
+    geom_bar(aes(x = aircraft_application, y = pct, fill = milservice)
+             , position = position_stack(), stat = "identity") + 
+    coord_flip()
+
+```
+
 
 What's the use of different aircrafts over time?
 
@@ -291,64 +376,219 @@ ggplotly(ap)
 
 ```
 
+Which aircrafts were used most?
+
+```{r}
+aircraft_use_overall = thunder[!is.na(aircraft_root), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+), by = .(aircraft_root)][order(-sortie_count)]
+
+top_aircrafts = aircraft_use_overall$aircraft_root[1:6] 
+
+ggplot(aircraft_use_overall[1:10]) + 
+    geom_bar(aes(x = reorder(aircraft_root, sortie_count), y = sortie_count), stat = "identity") + 
+    coord_flip()
+
+```
+
+
 Which aircraft were used in each application?
 
 ```{r}
 aircraft_use_ttl = thunder[!is.na(aircraft_application), .(
-    count = .N
+    sortie_count = .N
     , total_delivered = sum(delivered_tonnage)
     , total_jettisoned = sum(jettisoned_tonnage)
     , total_returned = sum(returned_tonnage)
     
-    ), by = .(aircraft_root, aircraft_type, aircraft_application, milservice)][order(aircraft_application, -count)]
+    ), by = .(aircraft_root, aircraft_type, aircraft_application)][order(aircraft_application, -sortie_count)]
 
-top_aircrafts = aircraft_use_ttl[, head(.SD, 2), by = .(aircraft_application, milservice)]
+top_aircrafts_app_app = aircraft_use_ttl[, head(.SD, 2), by = .(aircraft_application)]
+top_aircrafts_app[, ttl_count := sum(sortie_count), by = .(aircraft_application)]
+top_aircrafts_app[, aircraft_application := reorder(aircraft_application, -ttl_count)]
+
+top_aircrafts_app = top_aircrafts_app[order(aircraft_application, -sortie_count)]
+
+top_aircrafts_app[, rank := seq_along(aircraft_application)]
+
+ggplot(top_aircrafts_app[aircraft_application %in% top_application]) + 
+    geom_bar(aes(x = reorder(aircraft_root, rank), y = sortie_count, fill = aircraft_application), stat = "identity")
 
 ```
 
 
+## Fighter - bomber
+
+The F4 and F105 were used mainly by U.S. Air Force, while the F4 were also used by U.S. Navy and Marine Corp.
+
 ```{r}
-aircraft_use_time = thunder[aircraft_root %in% top_aircrafts$aircraft_root, .(
-    count = .N
+aircraft_use_service = thunder[!is.na(milservice) & !is.na(aircraft_root), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+    , total_jettisoned = sum(jettisoned_tonnage)
+    , total_returned = sum(returned_tonnage)
+    ), by = .(aircraft_root, aircraft_application, milservice)]
+
+aircraft_use_service[, total_sortie := sum(sortie_count), by = .(aircraft_root)]
+aircraft_use_service[, use_pct := sortie_count / total_sortie]
+
+ggplot(aircraft_use_service[aircraft_root %in% top_aircrafts_app$aircraft_root & aircraft_application == "FIGHTER, BOMBER"]) + 
+    geom_bar(aes(x = aircraft_root, y = use_pct, fill = milservice), stat = "identity", position = position_stack()) 
+
+```
+
+We can only see the F-4's growing usage over time. 
+
+According to Wikipedia, "It (F-4) served as the principal air superiority fighter for the U.S. Air Force, Navy, and Marine Corps and became important in the ground-attack and aerial reconnaissance roles late in the war". U.S. Navy were mainly responsible for the development of this aircraft and then distributed it to the USAF and USMC with great expectation about its performance.
+
+Meanwhile, the F-105 was later removed from combat due to high loss rates.
+
+
+```{r}
+aircraft_use_time_service = thunder[, .(
+    sortie_count = .N
     , total_delivered = sum(delivered_tonnage)
     , total_jettisoned = sum(jettisoned_tonnage)
     , total_returned = sum(returned_tonnage)
     , mission_count = uniqueN(missionid)
-    ), by = .(aircraft_root, aircraft_application, msnym)]
+    ), by = .(aircraft_root, aircraft_application, milservice, msnym)]
+
+ggplot(aircraft_use_time_service[aircraft_root %in% c("F105", "F4") & milservice %in% c("USAF", "USMC", "USN")]) + 
+    geom_line(aes(x = msnym, y = sortie_count, col = aircraft_root)) + 
+    facet_wrap(~milservice, scales = "free", nrow = 3)
 
 ```
+
+## Fighter & carrier fighter
+
+Mostly used by U.S. Navy
+
 
 ```{r}
-
-pa2 = ggplot(aircraft_use_time) + 
-    geom_line(aes(x = msnym, y = mission_count, group = aircraft_root, color = aircraft_root)) +
-    facet_wrap(~aircraft_application, scales = "free")
-
-ggplotly(pa2)
+ggplot(aircraft_use_service[aircraft_root %in% top_aircrafts_app$aircraft_root & aircraft_application %in% c("FIGHTER", "CARRIER, FIGHTER")]) + 
+    geom_bar(aes(x = aircraft_root, y = use_pct, fill = milservice), stat = "identity", position = position_stack()) 
 
 ```
 
 
-On 2 January 1967, the Americans sprang a surprise on the MiGs when they launched Operation Bolo
-
-The U.S. Air Force and the US Navy continued to lay down great expectations on the F4 Phantom, assuming that the massive arms, the perfect on-board radar, the highest speed and acceleration properties, coupled with the new tactics would provide "Phantoms" an advantage over the MiGs. But in encounters with lighter VPAF's MiG-21, F-4 began to suffer defeat. From May to December 1966, the U.S lost 47 aircraft in air battles, destroying only 12 enemy's fighters[90]
-
-
-# Which military services fly the most mission?
-
-U.S. Navy flew the most missions.
 
 ```{r}
-milservices_count = thunder[, .(count = .N), by = .(milservice)][order(-count)]
+ggplot(aircraft_use_time_service[aircraft_root %in% c("A1", "A4", "F8") & milservice %in% c("USAF", "USMC", "USN", "VNAF")]) + 
+    geom_line(aes(x = msnym, y = sortie_count, col = aircraft_root)) + 
+    facet_wrap(~milservice, scales = "free", nrow = 3)
 ```
 
-And mostly they used A-4 Skyhawks
+
+# Aircrafts used on each mission type
+
+A4, F4 and F105 assumes at least dual roles. How are the roles changed over time?
 
 ```{r}
-service_aircraft = thunder[, .(count = .N), by = .(milservice, aircraft_root)]
+aircraft_mfunc = thunder[!is.na(aircraft_root) & !is.na(mfunc_desc), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+), by = .(mfunc_desc, aircraft_root)][order(mfunc_desc, -sortie_count)]
 
-ggplot(service_aircraft) + 
-    geom_bar(aes(x = milservice, y = count, fill = aircraft_root)
-             , position = position_stack(), stat = "identity")
+aircraft_mfunc_top = aircraft_mfunc[mfunc_desc %in% c("ARMED RECCE", "STRIKE")]
+aircraft_mfunc_top[, total_ac_sortie := sum(sortie_count), by = .(aircraft_root)]
+
+
+ggplot(aircraft_mfunc_top[aircraft_root %in% top_aircrafts]) + 
+    geom_bar(aes(x = reorder(aircraft_root, -total_ac_sortie), y = sortie_count, fill = mfunc_desc), stat = "identity", show.legend = T)
 
 ```
+
+The A-1 Skyraider was an attack aircraft that was transfered to RVNAF and remained as its  "close air support workhorse" for much of the Vietnam War.
+
+The use of A-1 gradually decreased over time as it was to be replace by the A-6A Intruder as part of the general switch to jet aircraft.
+F-105 initally was used most for armed recconaisance missions, but its role was changed to mostly strike missions in the later years. Meanwhile, the F-4 Phantom remained quite active in both roles probably due to its superior qualities.
+
+```{r, fig.height=15, fig.width=20}
+aircraft_mfunc_time = thunder[!is.na(aircraft_root) & !is.na(mfunc_desc), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+), by = .(mfunc_desc, aircraft_root, msnym)]
+
+ggplot(aircraft_mfunc_time[aircraft_root %in% top_aircrafts & mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
+    geom_line(aes(x = msnym, y = sortie_count, color = mfunc_desc), stat = "identity") + 
+    facet_wrap(~aircraft_root, ncol = 2, scales = "free")
+
+```
+
+# Target types
+
+```{r}
+target_aggr = thunder[!is.na(tgttype), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+), by = .(tgttype)][order(-total_delivered)]
+
+top_targets = target_aggr$tgttype[1:5]
+
+pol_targets = c("TANK (POL)", "DRUM (POL)", "BUNKER FACILITY (POL)", "REFINERY (POL)")
+
+ggplot(target_aggr[1:15]) + 
+    geom_bar(aes(x = reorder(tgttype, total_delivered), y = total_delivered), stat = "identity") + 
+    coord_flip()
+
+```
+
+Motor vehicles were target more in the final stage of the operation - this probably correspond with the U.S. effort to cut the support line from the North to the South. 
+
+```{r, fig.height=15, fig.width=7}
+
+target_time = thunder[!is.na(tgttype), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+), by = .(tgttype, msnym)]
+
+ggplot(target_time[tgttype %in% top_targets]) + 
+    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity") + 
+    facet_wrap(~tgttype, nrow = length(top_targets), scales = "free")
+
+```
+
+Regrettably we do not have data of 1965, but we can still see POL targets were bombed with much higher intensity at the beginning but then went out of focus. According to Wikipedia:
+
+*On 29 June 1965, airstrikes against the North's petroleum, oil, and lubricants (POL) storage areas were finally authorized by Johnson. Howerver, North Vietnam's army anticipated this move and spread their POL reservoir across the whole country. By 4 September 1965, POL strikes was halted as U.S. intelligence realized that the North suffered no POL shortage.*
+
+
+```{r, fig.height=10, fig.width=7}
+
+ggplot(target_time[tgttype %in% pol_targets]) + 
+    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity") + 
+    facet_wrap(~tgttype, nrow = length(top_targets), scales = "free")
+
+```
+
+
+# Outcome of the war
+
+In short, Rolling Thunder operation was not successful at what it set out to do due to the nature of the operation, as well as the U.S.' over confidence.
+
+With the slow escalation of war, the Vietnamese army had time to adapt to the U.S. new strategies. Vietnamese signals intelligence staff of 5,000 were also "proved adept at exploiting traffic analysis as NSA was", when they deduced that before every bombing mission had an upsurge of traffic involving logistics and recon flights. Interestingly, they were also able to intercept U.S. radio communication, which used unencrypted voice. This is a major source of early warning for the Vietnamese army. :
+
+*"...captured documents showed that the North Vietnamese had at least thirty to forty-five minutes' warning of 80 to 90 per cent of Rolling Thunder missions."* 
+
+This severe security problem were not unknown to the U.S. Air Force, but they underestimated Vietnamese army's intelligence capabilities and ignored NSA's request to install voice encryption on aircrafts.
+
+The lack of night-bombing capabilities and all-weather aircrafts also limits their attacks to day time, which made it easier for Vietnamese army to cope with.
+
+
+```{r}
+mfunc_hour = thunder[!is.na(mfunc_desc) & !is.na(atk_hour), .(
+    sortie_count = .N
+    , total_delivered = sum(delivered_tonnage)
+    , mission_count = uniqueN(missionid)
+), by = .(mfunc_desc, atk_hour)]
+
+
+ggplot(mfunc_hour[atk_hour > 0 & mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
+    geom_line(aes(x = atk_hour, y = sortie_count, col = mfunc_desc), stat = "identity")
+
+```
+
+That's the end of the Vietnam Bombing series. Future articles will have more light-hearted topics. Till next time!
+
+
