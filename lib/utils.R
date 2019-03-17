@@ -12,28 +12,31 @@ load_libraries <- function(libraries)
 }
 
 
-plot_bomb_dens_year <- function(vnmap, target_coord, year, nsample = 1000)
+plot_bomb_density <- function(vnmap, target_coord, year, nsample = 1000, plot_title = NULL)
 {
+    edges = round(vnmap$data)
+    grid_x = seq(edges$lon[1], edges$lon[2], 1)
+    grid_y = seq(edges$lat[1], edges$lat[3], 1)
+    
     target_df <- target_coord %>% 
         filter(
             mfunc_desc_class == "KINETIC"
-            , lon >= 100,  lon <= 112
-            , lat >= 10, lat <= 24
+            , lon > min(grid_x), lon < max(grid_x)
+            , lat > min(grid_y), lat < max(grid_x)
             , msnyear == year
         ) %>% 
         sample_n(nsample)
     
     bomb_map = vnmap +
         geom_density_2d(data = target_df, aes(x = lon, y = lat), size = 0.3) +
-        stat_density_2d(data = target_df, aes(x = lon, y = lat, fill = ..level.., alpha = ..level..), geom = "polygon") + 
-        geom_vline(xintercept = seq(102, 114, 1), size = 0.1, alpha = 0.7, color = "gray") +
-        geom_hline(yintercept = seq(10, 22, 1), size = 0.1, alpha = 0.7, color = "gray") + 
-        # scale_color_manual(values = target_col) + 
-        # scale_fill_gradient(low = "green2", high = "red2") + 
+        stat_density_2d(data = target_df, aes(x = lon, y = lat, fill = ..level.., alpha = ..level..), show.legend = F, geom = "polygon") + 
+        geom_vline(xintercept = grid_x, size = 0.1, alpha = 0.7, color = "gray") +
+        geom_hline(yintercept = grid_y, size = 0.1, alpha = 0.7, color = "gray") + 
         scale_alpha(guide = F) + 
-        scale_x_continuous(breaks = seq(102, 114, 1)) + 
-        scale_y_continuous(breaks = seq(10, 22, 1)) + 
-        ggtitle(sprintf("Bombing intensity map %s", year)) + 
+        scale_fill_distiller(palette = "Spectral") + 
+        scale_x_continuous(breaks = grid_x) + 
+        scale_y_continuous(breaks = grid_y) + 
+        ggtitle(plot_title) + 
         labs(x = "", y = "") + 
         theme(
             panel.background = element_blank()
@@ -45,7 +48,7 @@ plot_bomb_dens_year <- function(vnmap, target_coord, year, nsample = 1000)
 }
 
 
-plot_bomb_points <- function(vnmap, target_coord, year = NULL, nsample = 1000, plot_title)
+plot_bomb_points <- function(vnmap, target_coord, year = NULL, nsample = 1000, plot_title = NULL)
 {
     edges = round(vnmap$data)
     grid_x = seq(edges$lon[1], edges$lon[2], 1)
@@ -69,6 +72,11 @@ plot_bomb_points <- function(vnmap, target_coord, year = NULL, nsample = 1000, p
             ) %>% 
             sample_n(nsample)
     }
+    
+    lat1 = min(vnmap$data$lat) %>% round()
+    lat2 = max(vnmap$data$lat) %>% round()
+    lon1 = min(vnmap$data$lon) %>% round()
+    lon2 = max(vnmap$data$lon) %>% round()
     
     bomb_map = vnmap +
         geom_point(data = target_df, aes(x = lon, y = lat), size = 0.1, col = "red") +

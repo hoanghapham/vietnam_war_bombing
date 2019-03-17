@@ -1,5 +1,5 @@
 ---
-title: "VIetnam Bombing History - Chapter 2"
+title: "Vietnam Bombing History - Chapter 2"
 author: "Ha Pham"
 output: html_document
 urlcolor: blue
@@ -7,7 +7,8 @@ urlcolor: blue
 
 ```{r setup, include=FALSE, echo=FALSE}
 source("config/config_pj.R")
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F, include = T)
+
 ```
 
 
@@ -17,14 +18,14 @@ vnmap = readRDS("data/raw/vnmap.rds")
 north_map = readRDS("data/raw/north_map.rds")
 aircrafts = fread("data/raw/THOR_Vietnam_Aircraft_Glossary.csv")
 
-thunder = thunder[msnym < "1969-01-01"]
+thunder = thunder[msnym <= "1968-11-02"]
 
 replace_missing(thunder)
 thunder[, msndate := ymd(msndate)]
 thunder[, msnym := ymd(msnym)]
-thunder[, delivered_tonnage := weapontypeweight * numweaponsdelivered ]
-thunder[, jettisoned_tonnage := weapontypeweight * numweaponsjettisoned]
-thunder[, returned_tonnage := weapontypeweight * numweaponsreturned]
+thunder[, delivered_tonnage := weapontypeweight * numweaponsdelivered * 0.453592 / 1000]
+thunder[, jettisoned_tonnage := weapontypeweight * numweaponsjettisoned * 0.453592 / 1000]
+thunder[, returned_tonnage := weapontypeweight * numweaponsreturned * 0.453592 / 1000]
 
 ```
 
@@ -32,38 +33,21 @@ Rolling Thunder is an interesting operation to investigate, because the bombing 
 
 A little bit of background: 
 
-After Geneva conference in 1954, the U.S. replaces France as a political backup for Ngo Dinh Diem in the South Vietnam, as it feared if Vietnam were fall under the influence of communism, all countries around would follow. At first, the U.S. believed that it could grow South Vietnam's government into a self-sustained one. However, by the beginning of 1965, that belief was turned around when they realized that "without further American action, Saigon government could not survive." 
+After Geneva conference in 1954, the U.S. replaces France as a political backup for Ngo Dinh Diem in the South Vietnam. They believed in the "domino effect", which suggested that if Vietnam fell under the influence of communism, all countries around would follow. At first, the U.S. believed South Vietnam's government could be grown into a self-sustained one. However, by the beginning of 1965, that belief was turned into "without further American action, Saigon government could not survive." 
 
-Operation Rolling Thunder was devised as a demonstration of U.S. commitment with Saigon. 
+Operation Rolling Thunder was devised as a demonstration of such commitment to Saigon. 
 
-The operation lasted from 02/03/1965 - 02/11/1968. Objectives. 
+The operation lasted from 1965-03-02 - 1968-11-02 with three main objectives which evolved over time:
 
 - Boost Saigon's morale at first, not to directly and severely affect Hanoi. 
 - Persuade North Vietnam to stop supporting South Vietnam's communists withouth sending ground force into North Vietnam
-- Destroy North Vietnam's transport system, industrial base, air defenses, which in effect will cut off the supporting line from North to South.
+- Destroy North Vietnam's transport system, industrial base, air defenses, which, in effect, will cut off the supporting line from North to South.
 
-What is interesting here is that the U.S. tried to tread on thin ice here. They want to scare North Vietnam off the South, but they did not dare to go for a full-blown air campaign lest China or Soviet would retaliate with their full might. Therefore, their bombing strategy slowly escalated and changed over time, which will reflect to the data.
+What is interesting here is that the U.S. tried to "tread on thin ice". They wanted to scare North Vietnam off the South, but they did not dare to go for a full-blown air campaign lest China or Soviet would retaliate with their full might. Therefore, their bombing strategy slowly escalated and changed over time, which would reflect to the data.
 
 # Overview
 
-Some numbers first
-
-Delivered tonnage:
-
-```{r}
-sum(thunder$delivered_tonnage) %>% comma()
-```
-
-Number of aircraft types
-
-
-```{r}
-uniqueN(thunder$aircraft_root)
-```
-
-
-
-Overview of bombing targets
+As shared above, the operation started from beginning of 1965. However, we only have data from October of the same year. During this operation, a total of `r sum(thunder$delivered_tonnage) %>% comma()` ton of weapons were dropped on Vietnam.
 
 
 ```{r}
@@ -90,13 +74,14 @@ force_col = c(
 ```
 
 
-To minimize airspace conflict among air forces, North Vietnam was divided into six target regions called "route packages":
+To minimize airspace conflict among air forces, North Vietnam was divided into six target regions called "route packages" (RP:
 
 <center> ![](plot/route_packages.gif) </center>
 
-Each region is assigned to one air force or navy, and they are forbidden to intrude each others' regions. The Navy's Carrier Task Force 77 handled operations in RPs 2, 3, 4, and 6B, as these bordered on the Gulf of Tonkin. The Air Force was given RP 1, RP 5, and 6A. We can see this division clearly from the bombing targets:
 
-```{r}
+Each region was assigned to one air force or navy, and they were forbidden to intrude each others' regions. The Navy's Carrier Task Force 77 handled operations in RP 2, 3, 4, and 6B, as these bordered on the Gulf of Tonkin. The Air Force was given RP 1, RP 5, and 6A. We can see this division clearly from the bombing targets:
+
+```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
 nsample = 5000
 edges = round(north_map$data)
     grid_x = seq(edges$lon[1], edges$lon[2], 1)
@@ -104,7 +89,8 @@ edges = round(north_map$data)
     
 target_df <- target_coord %>% 
     filter(
-        mfunc_desc_class == "KINETIC"
+        # mfunc_desc_class == "KINETIC"
+        msnyear >= 1966
         , lon >= edges$lon[1],  lon <= edges$lon[2]
         , lat >= edges$lat[1], lat <= edges$lat[3]
         , milservice %in% c("USN", "USAF")
@@ -126,323 +112,381 @@ thunder_map = north_map +
     scale_color_manual(values = force_col, name = NULL) +
     scale_x_continuous(breaks = grid_x) + 
     scale_y_continuous(breaks = grid_y) + 
-    ggtitle("Rolling Thunder Bombing map 1965 - 1968") + 
+    labs(title = "Rolling Thunder bombing map 1965 - 1968", subtitle = sprintf("N sample: %s", nsample)) +
     labs(x = "", y = "") + 
     theme(
         panel.background = element_blank()
         , axis.ticks = element_blank()
         , axis.line = element_line(size = 0.1, color = "gray")
-    ) 
-```
-
-```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
+        , axis.text = element_text(color = "gray50")
+        
+    )
 
 print(thunder_map)
 
 ```
 
-Bombing intensity throughout the years
 
-```{r}
-month_aggr = thunder[, .(
-    total_tonnage = sum(delivered_tonnage)
-    , sortie_count = .N
-    ), by = .(msnyear, msnmonth = round_date(msndate, "month"))]
+# Evolution of bombing targets
 
-ggplot(month_aggr) + 
-    geom_line(aes(x = msnmonth, y = total_tonnage))
+At the beginning of the operation, Washington believed in "gradualism", which considered "the threat of destruction is a better signal of U.S.' determination than the destruction itself". This translated into the the U.S. strategy to "hold important target hostage by bombing trivial ones". Johnson tightly control the campaign, refused to attack Hai Phong port directly and he deemed it "too provocative". 
+
+We can see this initial hesitation clearly when looking at bombing map of 1965:
+
+```{r, include=TRUE, fig.height=7, fig.width=14, fig.align="center"}
+point_65 = plot_bomb_points(north_map, target_coord, 1965, nsample = 2000, plot_title = "Rolling Thunder target map - 1965") + 
+    annotate("point", x = 106.3, y = 20.8, alpha = 0.2, size = 19)
+
+dense_65 = plot_bomb_density(north_map, target_coord, 1965, nsample = 2000, plot_title = "Rolling Thunder bombing intensity - 1965") + 
+    annotate("label", x = 108, y = 21, label = "Hanoi & Hai Phong\nwere spared", hjust = 0, alpha = 0.8) 
+
+grid.arrange(point_65, dense_65, nrow = 1)
+```
+
+According to air force historian Earl Tilford:
+
+> "(Initially) Targeting bore little resemblance to reality in that the sequence of attacks was uncoordinated and the targets were approved randomly – even illogically. The North's airfields, which, according to any rational targeting policy, should have been hit first in the campaign, were also off-limits."
+
+This course of action angered the military generals. They were disatisfied with the ranndomness and uselessness of the targets, and complained that striking and re-striking some targets benefited the North Vietnam's defense force. Thanks to the repetiveness of targets, Vietnamese gunners got time to adapt to U.S. patterns and incured heavy lost on its air forces. To calm these concerns, from mid 1966 to 1967 President Johnson approved attacks on sensitive targets, especially targets in Hanoi and Hai Phong. 
+
+```{r, fig.height=7, fig.width=14, fig.align="center", include=TRUE}
+dense_66 = plot_bomb_density(north_map, target_coord, 1966, nsample = 2000, plot_title = "Rolling Thunder bombing intensity - 1966")
+dense_67 = plot_bomb_density(north_map, target_coord, 1967, nsample = 2000, plot_title = "Rolling Thunder bombing intensity - 1967") + 
+    annotate("label", x = 108, y = 21, label = "Hanoi & Hai Phong\nwere targeted this year", hjust = 0, alpha = 0.8) 
+grid.arrange(dense_66, dense_67, nrow = 1)
+```
+
+In 1968, Rolling Thunder reached its final stage of operational evolution. Its purpose transformed from psychological warfare in the higher route packages to that of interdicting the logistics flow from the North to the South.
+
+```{r, fig.height=7, fig.width=7, fig.align="center", include=TRUE}
+plot_bomb_density(north_map, target_coord, 1968, nsample = 2000, plot_title = "Rolling Thunder bombing intensity - 1968") + 
+    annotate("label", x = 106.7, y = 19, 
+             label = "Ha Tinh were dubbed Vietnam's \n\"frying pan and bomb crater\"", hjust = 0, alpha = 0.8) 
 
 ```
 
+Let's look at the change of U.S. bombing priorities throughout the years again:
 
-```{r}
-ggplot(month_aggr) + 
-    geom_line(aes(x = msnmonth, y = sortie_count))
+```{r, fig.height=7, fig.width=7, fig.align="center", include=TRUE, warning=FALSE, message=FALSE}
 
-```
+label_df = data.table(
+    x = 108
+    , y = 19.5
+    , msnyear = unique(target_df$msnyear)
+)
 
-
-We do not have data before Oct 1965, but we can clearly see Hanoi and Hai Phong were bombed less severly because of U.S.' initial hesitation 
-
-```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
-rt65 = plot_bomb_points(north_map, target_coord, 1965, nsample = 2000, plot_title = "Rolling Thunder target map - 1965")
-
-rt65 + 
-    annotate("label", x = 108, y = 21, label = "Hanoi & Haiphong\nwere spared", hjust = 0, alpha = 0.8)  + 
-    annotate("rect", xmin = 105.5, xmax = 107, ymin = 20.5, ymax = 21.5, alpha = 0.3, size = 15)
-
-```
-
-
-
-Density, for better visualization
-
-```{r, include=TRUE, fig.height=7, fig.width=7, fig.align="center"}
-plot_bomb_dens_year(north_map, target_coord, 1965, nsample = 2000)
-```
-
-
-```{r, fig.height=7, fig.width=7, fig.align="center"}
-plot_bomb_dens_year(north_map, target_coord, year = 1966)
-```
-
-```{r, fig.height=7, fig.width=7, fig.align="center"}
-plot_bomb_dens_year(north_map, target_coord, year = 1967)
-```
-
-```{r, fig.height=7, fig.width=7, fig.align="center"}
-plot_bomb_dens_year(north_map, target_coord, year = 1968)
-```
-
-
-# How do bombing target strategy change
-
-```{r}
-tgt_dispersion = thunder[, .(
-    sd_lat = sd(tgt_lat, na.rm = T)
-    , sd_lon = sd(tgt_lon, na.rm = T)
+nsample_year = 2000
+edges = round(north_map$data)
+grid_x = seq(edges$lon[1], edges$lon[2], 1)
+grid_y = seq(edges$lat[1], edges$lat[3], 1)
     
-    , range_lat = range(tgt_lat, na.rm = T)[2] - range(tgt_lat, na.rm = T)[1]
-    , range_lon = range(tgt_lon, na.rm = T)[2] - range(tgt_lon, na.rm = T)[1]
-    
-    , iqr_lat = IQR(tgt_lat, na.rm = T)
-    , iqr_lon = IQR(tgt_lon, na.rm = T)
-), by = .(msn_month = round_date(msndate, "month"))]
+target_df2 <- target_coord %>% 
+    filter(
+        mfunc_desc_class == "KINETIC"
+        , msnyear >= 1965
+        , lon >= edges$lon[1],  lon <= edges$lon[2]
+        , lat >= edges$lat[1], lat <= edges$lat[3]
+        # , milservice %in% c("USN", "USAF")
+    ) %>% 
+    group_by(msnyear) %>% 
+    do(sample_n(., nsample_year))
+
+label_df = data.table(
+    x = 108
+    , y = 19.5
+    , msnyear = unique(target_df2$msnyear)
+)
 
 
+thunder_map_year = north_map +
+    geom_density_2d(data = target_df2, aes(x = lon, y = lat), size = 0.3) +
+    stat_density_2d(data = target_df2, aes(x = lon, y = lat, fill = ..level.., alpha = ..level..), show.legend = F, geom = "polygon") +
+    geom_label(data = label_df, aes(x = x, y = y, label = msnyear), col = "gray40", size = 10) + 
+    geom_vline(xintercept = grid_x, size = 0.1, alpha = 0.7, color = "gray") +
+    geom_hline(yintercept = grid_y, size = 0.1, alpha = 0.7, color = "gray") +
+    scale_x_continuous(breaks = grid_x) +
+    scale_y_continuous(breaks = grid_y) +
+    scale_alpha(guide = F) + 
+    scale_fill_distiller(palette = "Spectral") + 
+    labs(x = "", y = "", title = "Rolling Thunder bombing intensity throughout the years") + 
+    transition_manual(frames = msnyear) +
+    ease_aes("linear") +
+    theme(
+        panel.background = element_blank()
+        , axis.ticks = element_blank()
+        , axis.line = element_line(size = 0.1, color = "gray")
+        , axis.text = element_text(size = 15, color = "gray50")
+        , title = element_text(size = 16)
+    )
+
+thunder_map_year
+thunder_map_animated = animate(thunder_map_year, width = 800, height = 800)
+thunder_map_animated
+# anim_save("thunder_map_animated.gif", thunder_map_animated, path = "plot/")
 ```
 
-At first latitude's SD is quite large but then drop --> first random by latitude?
-at first longitude's SD is small but then increase --> expand target to different regions in 1969?
 
-Rolling Thunder reached the last stage of its operational evolution during 1967 and 1968. The chief purpose of the American air effort in the higher Route Packages of North Vietnam was slowly transformed into that of interdicting the flow of supplies and material and the destruction of those segments of the north's infrastructure that supported its military effort
+# Details on bombing stragegies
 
-1966: bomb on higher route packages to scare the north, thus low longitude variation, high latitude (horizontal) variation
-1968 onward: bomb lower route packages (panhandle), thus longitude variation increases
+Bombing tonnage in increased gradually year-by-year and peaked in 1968, which is why it was described as the bloodiest year in this war.
 
-```{r}
-ggplot(tgt_dispersion[msn_month >= '1966-01-01'], aes(x = msn_month)) + 
-    geom_line(aes(y = sd_lat, group = 1), stat = "identity", color = "red") + 
-    geom_line(aes(y = sd_lon, group = 1), stat = "identity", color = "blue") 
+```{r, fig.width=8, fig.height=5, fig.align="center"}
+theme_clean = theme(
+    panel.background = element_blank()
+    , panel.grid.major.x = element_blank()
+    , panel.grid.major.y = element_line(color = "gray90", size = .3)
+    , axis.ticks = element_blank()
+    , axis.text = element_text(color = "gray50")
+    , axis.line = element_line(color = "gray80", size = 0.3)
+    , axis.title.x = element_text(color = "gray50", hjust = 0.01)
+    , axis.title.y = element_text(color = "gray50", hjust = 1)
+    , title = element_text(color = "gray40")
+)
 
-```
+theme_clean_flip = theme_clean + 
+    theme(
+        panel.grid.major.x = element_line(color = "gray90", size = 0.2)
+        , panel.grid.major.y = element_blank()
+    )
 
+time_axis = scale_x_date(breaks = seq(date("1966-01-01"), date("1969-01-01"), by = "6 month"), date_labels = "%Y-%m")
 
-Coordinate ranges (max - min) is lower, which could means more focused bombing.
-
-```{r}
-ggplot(tgt_dispersion[msn_month >= '1966-07-01'], aes(x = msn_month)) + 
-    geom_line(aes(y = range_lat, group = 1), stat = "identity", color = "red") + 
-    geom_line(aes(y = range_lon, group = 1), stat = "identity", color = "blue") 
-
-```
-
-More on this change of bombing strategy later.
-
-# The gradual escalation
-
-Bombing tonnage in Rolling Thunder increases gradually year-by-year and peaked in 1968, which is why it was described as the bloodiest year in this war.
-
-```{r}
 tonnage_time = thunder[, .(total_tonnage = sum(delivered_tonnage)), by = .(msnym)]
+tonnage_time[, highlight := msnym >= "1968-01-01"]
+
+hlcol = c("TRUE" = "firebrick3", "FALSE" = "gray80")
+hlsize = c("TRUE" = 1, "FALSE" = 0.5)
 
 ggplot(tonnage_time) + 
-    geom_line(aes(x = msnym, y = total_tonnage, group = 1)) + 
-    scale_x_date(date_breaks = "1 year", date_labels = "%Y")
+    geom_line(aes(x = msnym, y = total_tonnage, group = 1, col = highlight, size = highlight), show.legend = F) + 
+    annotate("text", x = date("1968-05-01"), y = 23000
+             , label = "1968 was the bloodiest year of the war"
+             , hjust = 1, size = 4.5, color = "gray30") + 
+    scale_color_manual(values = hlcol) + 
+    scale_size_manual(values = hlsize) + 
+    labs(x = "", y = "", title = "Bombing tonnage over months", subtitle = "Unit: ton") + 
+    scale_y_continuous(labels = comma_format()) + 
+    time_axis +
+    theme_clean
 
 ```
 
+The increase in intensity also reflects in the tonnage over area. During the peak bombing time of 1968, each square kilometer received more than three times the amount of weapon in the previous peaks. This was due to the increase in bombing tonnage, and the higher focus of targeted area.
 
-# Mission types
+```{r, fig.height=5, fig.width=8, fig.align="center"}
+month_aggr = thunder[, .(
+    total_tonnage = sum(delivered_tonnage)
+    , q1_lat = quantile(tgt_lat, 0.1, na.rm = T)
+    , q3_lat = quantile(tgt_lat, 0.9, na.rm = T)
+    , q1_lon = quantile(tgt_lon, 0.1, na.rm = T)
+    , q3_lon = quantile(tgt_lon, 0.9, na.rm = T)
+    
+    ), by = .(msnyear, msnym)]
 
-Armed recconaiseanse means using small aircraft formations patrolled highways, railroads, rivers searching for targets of opportunity 
+month_aggr[, area := abs((q1_lat - q3_lat) * (q1_lon - q3_lon) * 111 ^ 2)]
+month_aggr[, ton_per_km2 := total_tonnage / area]
+month_aggr[, highlight := msnym >= "1968-01-01"]
 
-```{r}
+year_aggr = month_aggr[, .(avg_ton_km2_monthly = mean(ton_per_km2)), by = .(msnyear)]
+
+vs66 = year_aggr[msnyear == 1968]$avg_ton_km2_monthly / year_aggr[msnyear == 1966]$avg_ton_km2_monthly 
+vs67 = year_aggr[msnyear == 1968]$avg_ton_km2_monthly / year_aggr[msnyear == 1967]$avg_ton_km2_monthly 
+
+ggplot(month_aggr) +
+    geom_line(aes(x = msnym, y = ton_per_km2, color = highlight, size = highlight, group = 1), show.legend = F) +
+    annotate("text", x = date("1968-05-01"), y = 0.8
+             , label = "Average tonnage in 1968 is 3 times\nthe averages in 1966 and 1967"
+             , hjust = 1, size = 4.5, color = "gray30") + 
+    labs(x = "", y = "", title = "Average tonnage per km2 - monthly figures", subtitle = "Unit: ton") + 
+    scale_color_manual(values = hlcol) +
+    scale_size_manual(values = hlsize) +
+    time_axis +
+    theme_clean
+
+```
+
+Most of the sorties are related to Strike and Armed reconnaissance missions. While targets of Strike missions were fixed, Armed recon missions' targets are situational. This type of mission made use of small aircraft formations to patroll highways, railroads, rivers and bombed whatever they deemed necessary. 
+
+```{r, fig.height=5, fig.width=8, fig.align="center"}
 mfunc_aggr = thunder[!is.na(mfunc_desc), .(
     sortie_count = .N
+    , mission_count = uniqueN(missionid)
     , total_tonnage = sum(delivered_tonnage)
-), by = .(mfunc_desc, mfunc_desc_class)]
+), by = .(mfunc_desc, mfunc_desc_class)][order(-mission_count)]
+
+mfunc_aggr[, highlight := mfunc_desc %in% c("ARMED RECCE", "STRIKE")]
+hlcol2 = c("TRUE"= "dodgerblue4", "FALSE" = "gray80")
 
 ggplot(mfunc_aggr[1:10]) + 
-    geom_bar(aes(x = reorder(mfunc_desc, sortie_count), y = sortie_count), stat = "identity") + 
-    coord_flip()
+    geom_bar(aes(x = reorder(mfunc_desc, mission_count), y = mission_count, fill = highlight), 
+             stat = "identity", show.legend = F) +
+    geom_text(data = mfunc_aggr[1:2], 
+              aes(x = reorder(mfunc_desc, mission_count), y = mission_count, label = comma(mission_count)), 
+              color = "white", hjust = 1.2) +
+    labs(x = "", y = "", title = "Number of mission by functionality") + 
+    scale_y_continuous(labels = comma_format()) + 
+    scale_fill_manual(values = hlcol) + 
+    coord_flip() + 
+    theme_clean_flip  
+    
 
 ```
 
+We will 
 
+During 1966 there was a huge spike in the number of armed recon missions. This was most likely the result of military's complaints about the faulty system to request fixed targets. As summed up by [this post on Quora](https://www.quora.com/What-was-the-purpose-of-and-problems-with-the-Rolling-Thunder-bombing-campaign-during-the-Vietnam-War/answer/Charles-Fletcher-5), it took too much time for the Air Force and Navy to request and get approvals to attack a target. By the time the target was approved, it had already moved or become trivial.
 
-```{r}
-
-mfunc_stats = thunder[!is.na(mfunc_desc), .(
-    sortie_count = .N
-    , unique_msn_count = uniqueN(missionid)
-    , total_delivered = sum(delivered_tonnage)
-    , days_happened_count = uniqueN(msndate)
-), by = .(mfunc_desc_class, mfunc_desc)]
-
-
-
-mfunc_time = thunder[mfunc_desc %in% mfunc_popular, .(
+```{r, fig.height=8, fig.height=5, fig.align="center"}
+mfunc_time = thunder[, .(
     sortie_count = .N
     , mission_count = uniqueN(missionid)
     , total_delivered = sum(delivered_tonnage)
 ), by = .(mfunc_desc, msnym, msnyear)]
 
+mfunc_time[, highlight := msnyear == 1966]
+mfunc_time[, mfunc_highlight := interaction(mfunc_desc, highlight)]
 
-
-```
-
-At first there are more armed reccon missions, due to "system to request fixed targets are too complicated". Even in the after years this type of mission is still consistantly used, but the strike missions gradually increased due to the escalating bombing efforts.
-
-```{r}
+hlcol2 = c("ARMED RECCE" = "goldenrod3", "STRIKE" = "firebrick3")
+hlsize2 = c("TRUE" = 1, "FALSE" = 0.5)
+hlalpha2 = c("TRUE" = 1, "FALSE" = 0.4)
 
 ggplot(mfunc_time[mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
-    geom_line(aes(x = msnym, y = sortie_count, color = mfunc_desc), stat = "identity")
+    geom_line(aes(x = msnym, y = mission_count, 
+                  color = mfunc_desc, size = highlight, alpha = highlight, group = mfunc_desc)
+             , stat = "identity") +
+    scale_color_manual(values = hlcol2) + 
+    scale_size_manual(values = hlsize2) + 
+    scale_alpha_manual(values = hlalpha2) +
+    scale_y_continuous(labels = comma_format()) +
+    labs(x = "", y = "", title = "Number of Armed Recon and Strike missions over months") + 
+    time_axis + 
+    theme_clean + 
+    guides(size = F, alpha = F) + 
+    theme(
+        legend.position = c(0.14, 0.97)
+        , legend.direction = "horizontal"
+        , legend.title = element_blank()
+        , legend.key = element_blank()
+        , legend.background = element_blank()
+        , legend.box.background = element_blank()
+        , legend.text = element_text(color = "gray40")
+    )
 
 ```
 
-# Aircraft use by Military services
+Which aircrafts were used in these types of mission?
 
-Looking at aircraft application, fighter - bomber, fighter, attack aircrafts are used most and delivered the highest tonnage of weapon.
-
-```{r}
-# Application color
-
-aircraft_app_ttl = thunder[!is.na(aircraft_application), .(
-    count = .N
+```{r, fig.width=10, fig.height=6, fig.align="center"}
+aircraft_mfunc = thunder[!is.na(aircraft_application) & (mfunc_desc_class == "KINETIC"), .(
+    sortie_count = .N
     , mission_count = uniqueN(missionid)
     , total_tonnage = sum(delivered_tonnage)
-    ), by = .(aircraft_application)][order(aircraft_application, -count)]
+), by = .(mfunc_desc, aircraft_root)][order(mfunc_desc, -mission_count)]
 
-ggplot(aircraft_app_ttl) + 
-    geom_bar(aes(x = reorder(aircraft_application, count), y = count), stat = "identity") + 
-    coord_flip()
-```
+aircraft_mfunc[, msn_ranking := rank(-mission_count), by = .(mfunc_desc)]
+aircraft_mfunc[, sortie_ranking := rank(-sortie_count), by = .(mfunc_desc)]
 
-A fighter-bomber is a fighter aircraft that has been modified, or used primarily, as a light bomber or attack aircraft. It differs from bomber and attack aircraft primarily in its origins, as a fighter that has been adapted into other roles,[1] whereas bombers and attack aircraft are developed specifically for bombing and attack roles.
+selected_ac = c("A4", "F4", "A1", "A6", "F105")
+aircraft_mfunc[mfunc_desc == "ARMED RECCE", highlight := "hl1"]
+aircraft_mfunc[mfunc_desc == "STRIKE", highlight := "hl2"]
+aircraft_mfunc[!(aircraft_root %in% selected_ac), highlight := "hl3"]
 
---> Probably because of this versatility that it was used most
+hlcol3 = c("hl1" = "goldenrod3", "hl2" = "firebrick3", "hl3" = "gray80")
 
-For each of these aircraft, BOMB is still the most used weapon. The percentage of air-to-air weapon used by fighter aircrafts is higher than that of bombers.
-
-```{r}
-aircraft_wtype_ttl = thunder[!is.na(aircraft_application) & !is.na(weapon_class), .(
-    count = .N
-    , total_tonnage = sum(delivered_tonnage)
-    ), by = .(aircraft_application, weapon_class)][order(aircraft_application, -count)]
-aircraft_wtype_ttl[, pct := count / sum(count), by = .(aircraft_application)]
-
-top_application = c("FIGHTER, BOMBER", "FIGHTER", "ATTACK", "CARRIER, FIGHTER", "TACTICAL, BOMBER", "STRATEGIC, BOMBER")
-
-ggplot(aircraft_wtype_ttl[aircraft_application %in% top_application]) + 
-    geom_bar(aes(x = aircraft_application, y = pct, fill = weapon_class)
-             , position = position_stack(), stat = "identity") + 
-    coord_flip()
-
-```
-
-```{r}
-aircraft_service_ttl = thunder[!is.na(aircraft_application) & !is.na(milservice), .(
-    sortie_count = .N
-    , total_tonnage = sum(delivered_tonnage)
-    ), by = .(aircraft_application, milservice)]
-
-aircraft_service_ttl[, pct := sortie_count / sum(sortie_count), by = .(aircraft_application)]
-
-ggplot(aircraft_service_ttl[aircraft_application %in% top_application]) + 
-    geom_bar(aes(x = aircraft_application, y = pct, fill = milservice)
-             , position = position_stack(), stat = "identity") + 
-    coord_flip()
+ggplot(aircraft_mfunc[mfunc_desc %in% c("ARMED RECCE", "STRIKE") & sortie_ranking <= 10]) + 
+    geom_bar(aes(x = reorder(aircraft_root, sortie_count), y = sortie_count, 
+                 fill = highlight), stat = "identity", show.legend = F) + 
+    geom_text(data = aircraft_mfunc[mfunc_desc %in% c("ARMED RECCE", "STRIKE") & sortie_count >= 14000], 
+              aes(x = reorder(aircraft_root, sortie_count), y = sortie_count, label = comma(sortie_count)), 
+              col = "white", hjust = 1.2) + 
+    scale_fill_manual(values = hlcol3) +
+    labs(x = "", y = "", title = "Aircraft type usage by mission count") + 
+    facet_wrap(~mfunc_desc, ncol = 2, scales = "free") + 
+    coord_flip() + 
+    theme_clean_flip + 
+    theme(
+        strip.background = element_blank()
+        , strip.text = element_text(color = "gray30")
+    )
 
 ```
 
+Attack aircrafts were use more and more, indicating more precise bombing missions.
 
-What's the use of different aircrafts over time?
-
-ATTACK is use more and more, indicating more precise bombing missions. Pure fighter aircrafts used less or were adapted into fighter - bomber roles because by this time dogfighting (air-to-air combat) were fallen out of favor in the U.S. This is due their belief that missiles were all they needed to shoot down Soviet's heavy bombers. (Official dogfight training only returned by 1969 with the TOPGUN program.) 
-
-```{r}
+```{r, fig.height=5, fig.width=10, fig.align="center"}
 
 aircraft_app_time = thunder[!is.na(aircraft_application), .(
-    count = .N
+    sortie_count = .N
+    , mission_count = uniqueN(missionid)
     , total_tonnage = sum(delivered_tonnage)
-    ), by = .(aircraft_application, msnym)][order(-count)]
+    ), by = .(aircraft_application, msnym)][order(-sortie_count)]
 
+aircraft_app_time[aircraft_application == "FIGHTER, BOMBER", highlight := "hl1"]
+aircraft_app_time[aircraft_application == "ATTACK", highlight := "hl2"]
+aircraft_app_time[aircraft_application == "FIGHTER", highlight := "hl3"]
+aircraft_app_time[is.na(highlight), highlight := "hl4"]
 
-ap = ggplot(aircraft_app_time) + 
-    geom_line(aes(x = msnym, y = total_tonnage, group = aircraft_application, color = aircraft_application))
+hlcol4 = c("hl1" = "dodgerblue3", "hl2" = "goldenrod3", "hl3" = "firebrick3", "hl4" = "gray80")
+hlsize4_fb_fr = c("hl1" = 1, "hl2" = 0.5, "hl3" = 1, "hl4" = 0.5)
+hlsize4_atk = c("hl1" = 0.5, "hl2" = 1, "hl3" = 0.5, "hl4" = 0.5)
+hlalpha3_fb_fr = c("hl1" = 1, "hl2" = 0.3, "hl3" = 1, "hl4" = 0.3)
+hlalpha3_atk = c("hl1" = 0.3, "hl2" = 1, "hl3" = 0.3, "hl4" = 0.3)
 
-ggplotly(ap)
-
-```
-
-Which aircrafts were used most?
-
-```{r}
-aircraft_use_overall = thunder[!is.na(aircraft_root), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-), by = .(aircraft_root)][order(-sortie_count)]
-
-top_aircrafts = aircraft_use_overall$aircraft_root[1:6] 
-
-ggplot(aircraft_use_overall[1:10]) + 
-    geom_bar(aes(x = reorder(aircraft_root, sortie_count), y = sortie_count), stat = "identity") + 
-    coord_flip()
-
-```
-
-
-Which aircraft were used in each application?
-
-```{r}
-aircraft_use_ttl = thunder[!is.na(aircraft_application), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-    , total_jettisoned = sum(jettisoned_tonnage)
-    , total_returned = sum(returned_tonnage)
-    
-    ), by = .(aircraft_root, aircraft_type, aircraft_application)][order(aircraft_application, -sortie_count)]
-
-top_aircrafts_app_app = aircraft_use_ttl[, head(.SD, 2), by = .(aircraft_application)]
-top_aircrafts_app[, ttl_count := sum(sortie_count), by = .(aircraft_application)]
-top_aircrafts_app[, aircraft_application := reorder(aircraft_application, -ttl_count)]
-
-top_aircrafts_app = top_aircrafts_app[order(aircraft_application, -sortie_count)]
-
-top_aircrafts_app[, rank := seq_along(aircraft_application)]
-
-ggplot(top_aircrafts_app[aircraft_application %in% top_application]) + 
-    geom_bar(aes(x = reorder(aircraft_root, rank), y = sortie_count, fill = aircraft_application), stat = "identity")
+ggplot(aircraft_app_time) + 
+    geom_line(aes(x = msnym, y = sortie_count, group = aircraft_application, 
+                  color = highlight, size = highlight, alpha = highlight), show.legend = F) +
+    geom_text(aes(x = date("1968-10-01"), y = 2500, label = "ATTACK"), hjust = -0.5, 
+              color = "goldenrod3", size = 5) +
+    labs(x = "", y = "", title = "Aircraft types usage over time") + 
+    scale_color_manual(values = hlcol4) + 
+    scale_size_manual(values = hlsize4_atk) +
+    scale_alpha_manual(values = hlalpha3_atk) +
+    scale_x_date(breaks = seq(date("1966-01-01"), date("1969-01-01"), by = "6 month"), 
+                 limits = date(c("1965-09-01", "1969-06-01")),
+                 date_labels = "%Y-%m") +
+    scale_y_continuous(labels = comma_format()) + 
+    theme_clean 
 
 ```
 
+ Meanwhile, pure fighter aircrafts were used less or were adapted into fighter - bomber roles. By this time, dogfighting (air-to-air combat) were fallen out of favor in the U.S. This is due their belief that missiles were all they needed to shoot down Soviet's heavy bombers, and official dogfight training only returned by 1969 with the TOPGUN program.
 
-## Fighter - bomber
-
-The F4 and F105 were used mainly by U.S. Air Force, while the F4 were also used by U.S. Navy and Marine Corp.
-
-```{r}
-aircraft_use_service = thunder[!is.na(milservice) & !is.na(aircraft_root), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-    , total_jettisoned = sum(jettisoned_tonnage)
-    , total_returned = sum(returned_tonnage)
-    ), by = .(aircraft_root, aircraft_application, milservice)]
-
-aircraft_use_service[, total_sortie := sum(sortie_count), by = .(aircraft_root)]
-aircraft_use_service[, use_pct := sortie_count / total_sortie]
-
-ggplot(aircraft_use_service[aircraft_root %in% top_aircrafts_app$aircraft_root & aircraft_application == "FIGHTER, BOMBER"]) + 
-    geom_bar(aes(x = aircraft_root, y = use_pct, fill = milservice), stat = "identity", position = position_stack()) 
-
+```{r, fig.height=5, fig.width=10, fig.align="center"}
+ggplot(aircraft_app_time) + 
+    geom_line(aes(x = msnym, y = sortie_count, group = aircraft_application, 
+                  color = highlight, size = highlight, alpha = highlight), show.legend = F) +
+    geom_text(aes(x = date("1968-10-01"), y = 5000, label = "FIGHTER, BOMBER"), hjust = -0.2, 
+              color = "dodgerblue3", size = 5) +
+    geom_text(aes(x = date("1968-10-01"), y = 2500, label = "FIGHTER"), hjust = -0.4, 
+              color = "firebrick3", size = 5) +
+    labs(x = "", y = "", title = "Aircraft types usage over time") + 
+    scale_color_manual(values = hlcol4) + 
+    scale_size_manual(values = hlsize4_fb_fr) +
+    scale_alpha_manual(values = hlalpha3_fb_fr) +
+    scale_x_date(breaks = seq(date("1966-01-01"), date("1969-01-01"), by = "6 month"), 
+                 limits = date(c("1965-09-01", "1969-09-01")),
+                 date_labels = "%Y-%m") +
+    scale_y_continuous(labels = comma_format()) + 
+    theme_clean 
 ```
 
-We can only see the F-4's growing usage over time. 
 
-According to Wikipedia, "It (F-4) served as the principal air superiority fighter for the U.S. Air Force, Navy, and Marine Corps and became important in the ground-attack and aerial reconnaissance roles late in the war". U.S. Navy were mainly responsible for the development of this aircraft and then distributed it to the USAF and USMC with great expectation about its performance.
+# Aircrafts
 
-Meanwhile, the F-105 was later removed from combat due to high loss rates.
+## Fighter-bomber: F4 & F105
+
+<center> ![](reference/F4.jpg) </center>
+<center> ![](reference/F105.jpg) </center>
+
+What is a fighter-bomber? According to Wikipedia:
+
+> A fighter-bomber is a fighter aircraft that has been modified, or used primarily, as a light bomber or attack aircraft. It differs from bomber and attack aircraft primarily in its origins, as a fighter that has been adapted into other roles, whereas bombers and attack aircraft are developed specifically for bombing and attack roles.
+
+Due to this versatility, fighter-bomber type was a mainstay in the U.S. army. 
+
+The F4 served as the principal air superiority fighter for the U.S. Air Force, Navy, and Marine Corps and became important in the ground-attack and aerial reconnaissance roles late in the war". U.S. Navy were mainly responsible for the development of this aircraft and then distributed it to the USAF and USMC with great expectation about its performance.
+
+We can see the F-4's growing usage over time. Meanwhile, the F-105 - was later removed from combat due to high loss rates.
 
 
 ```{r}
@@ -460,63 +504,28 @@ ggplot(aircraft_use_time_service[aircraft_root %in% c("F105", "F4") & milservice
 
 ```
 
-## Fighter & carrier fighter
+## Attack aircraft: A1, A4 & A6
 
-Mostly used by U.S. Navy
+<center> ![](reference/A1.jpg) </center>
+<center> ![](reference/A4.jpg) </center>
+<center> ![](reference/A6.jpg) </center>
 
-
-```{r}
-ggplot(aircraft_use_service[aircraft_root %in% top_aircrafts_app$aircraft_root & aircraft_application %in% c("FIGHTER", "CARRIER, FIGHTER")]) + 
-    geom_bar(aes(x = aircraft_root, y = use_pct, fill = milservice), stat = "identity", position = position_stack()) 
-
-```
-
-
-
-```{r}
-ggplot(aircraft_use_time_service[aircraft_root %in% c("A1", "A4", "F8") & milservice %in% c("USAF", "USMC", "USN", "VNAF")]) + 
-    geom_line(aes(x = msnym, y = sortie_count, col = aircraft_root)) + 
-    facet_wrap(~milservice, scales = "free", nrow = 3)
-```
-
-
-# Aircrafts used on each mission type
-
-A4, F4 and F105 assumes at least dual roles. How are the roles changed over time?
-
-```{r}
-aircraft_mfunc = thunder[!is.na(aircraft_root) & !is.na(mfunc_desc), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-), by = .(mfunc_desc, aircraft_root)][order(mfunc_desc, -sortie_count)]
-
-aircraft_mfunc_top = aircraft_mfunc[mfunc_desc %in% c("ARMED RECCE", "STRIKE")]
-aircraft_mfunc_top[, total_ac_sortie := sum(sortie_count), by = .(aircraft_root)]
-
-
-ggplot(aircraft_mfunc_top[aircraft_root %in% top_aircrafts]) + 
-    geom_bar(aes(x = reorder(aircraft_root, -total_ac_sortie), y = sortie_count, fill = mfunc_desc), stat = "identity", show.legend = T)
-
-```
 
 The A-1 Skyraider was an attack aircraft that was transfered to RVNAF and remained as its  "close air support workhorse" for much of the Vietnam War.
 
-The use of A-1 gradually decreased over time as it was to be replace by the A-6A Intruder as part of the general switch to jet aircraft.
-F-105 initally was used most for armed recconaisance missions, but its role was changed to mostly strike missions in the later years. Meanwhile, the F-4 Phantom remained quite active in both roles probably due to its superior qualities.
+The use of A-1 gradually decreased over time as it was to be replace by the A-6A Intruder and A-4 Skyhawk as part of the general switch to jet aircraft.
 
-```{r, fig.height=15, fig.width=20}
-aircraft_mfunc_time = thunder[!is.na(aircraft_root) & !is.na(mfunc_desc), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-), by = .(mfunc_desc, aircraft_root, msnym)]
-
-ggplot(aircraft_mfunc_time[aircraft_root %in% top_aircrafts & mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
-    geom_line(aes(x = msnym, y = sortie_count, color = mfunc_desc), stat = "identity") + 
-    facet_wrap(~aircraft_root, ncol = 2, scales = "free")
+```{r}
+ggplot(aircraft_use_time_service[aircraft_root %in% c("A1", "A4", "A6") & milservice %in% c("USAF", "USMC", "USN")]) + 
+    geom_line(aes(x = msnym, y = sortie_count, col = aircraft_root)) + 
+    facet_wrap(~milservice, scales = "free", nrow = 3)
 
 ```
 
+
 # Target types
+
+Bridge, depot and road were bombed most heavily.
 
 ```{r}
 target_aggr = thunder[!is.na(tgttype), .(
@@ -544,7 +553,7 @@ target_time = thunder[!is.na(tgttype), .(
 ), by = .(tgttype, msnym)]
 
 ggplot(target_time[tgttype %in% top_targets]) + 
-    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity") + 
+    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity", show.legend = F) + 
     facet_wrap(~tgttype, nrow = length(top_targets), scales = "free")
 
 ```
@@ -557,38 +566,22 @@ Regrettably we do not have data of 1965, but we can still see POL targets were b
 ```{r, fig.height=10, fig.width=7}
 
 ggplot(target_time[tgttype %in% pol_targets]) + 
-    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity") + 
+    geom_line(aes(x = msnym, y = total_delivered, color = tgttype), stat = "identity", show.legend = F) + 
     facet_wrap(~tgttype, nrow = length(top_targets), scales = "free")
 
 ```
 
-
 # Outcome of the war
-
-In short, Rolling Thunder operation was not successful at what it set out to do due to the nature of the operation, as well as the U.S.' over confidence.
 
 With the slow escalation of war, the Vietnamese army had time to adapt to the U.S. new strategies. Vietnamese signals intelligence staff of 5,000 were also "proved adept at exploiting traffic analysis as NSA was", when they deduced that before every bombing mission had an upsurge of traffic involving logistics and recon flights. Interestingly, they were also able to intercept U.S. radio communication, which used unencrypted voice. This is a major source of early warning for the Vietnamese army. :
 
-*"...captured documents showed that the North Vietnamese had at least thirty to forty-five minutes' warning of 80 to 90 per cent of Rolling Thunder missions."* 
+> "...captured documents showed that the North Vietnamese had at least thirty to forty-five minutes' warning of 80 to 90 per cent of Rolling Thunder missions."
 
 This severe security problem were not unknown to the U.S. Air Force, but they underestimated Vietnamese army's intelligence capabilities and ignored NSA's request to install voice encryption on aircrafts.
 
-The lack of night-bombing capabilities and all-weather aircrafts also limits their attacks to day time, which made it easier for Vietnamese army to cope with.
+In short, Rolling Thunder was meant to "send a message" to the North, but it was not successful at what it set out to do.
 
+# Reference
 
-```{r}
-mfunc_hour = thunder[!is.na(mfunc_desc) & !is.na(atk_hour), .(
-    sortie_count = .N
-    , total_delivered = sum(delivered_tonnage)
-    , mission_count = uniqueN(missionid)
-), by = .(mfunc_desc, atk_hour)]
-
-
-ggplot(mfunc_hour[atk_hour > 0 & mfunc_desc %in% c("STRIKE", "ARMED RECCE")]) + 
-    geom_line(aes(x = atk_hour, y = sortie_count, col = mfunc_desc), stat = "identity")
-
-```
-
-That's the end of the Vietnam Bombing series. Future articles will have more light-hearted topics. Till next time!
-
-
+- https://www.quora.com/What-was-the-purpose-of-and-problems-with-the-Rolling-Thunder-bombing-campaign-during-the-Vietnam-War
+- https://en.wikipedia.org/wiki/Operation_Rolling_Thunder
