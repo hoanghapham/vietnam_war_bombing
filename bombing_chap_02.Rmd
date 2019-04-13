@@ -485,6 +485,7 @@ ggplot(aircraft_mfunc[mfunc_desc %in% c("ARMED RECCE", "STRIKE") & sortie_rankin
               aes(x = reorder(aircraft_root, sortie_count), y = sortie_count, label = comma(sortie_count)), 
               col = "white", hjust = 1.2) + 
     scale_fill_manual(values = hlcol3) +
+    scale_y_continuous(labels = comma_format()) + 
     labs(x = "", y = "", title = "Aircraft type usage by mission count") + 
     facet_wrap(~mfunc_desc, ncol = 2, scales = "free") + 
     coord_flip() + 
