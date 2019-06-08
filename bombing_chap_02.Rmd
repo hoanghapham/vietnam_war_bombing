@@ -558,7 +558,7 @@ text_df = data.frame(
     , y = c(400, 1300, 7500)
     , milservice = c("USAF", "USMC", "USN")
     , labels = c(
-        "A1 is dropped by USAF,", "replaced with the A6 at Marine Corp", "and A4 at Navy."
+        "A1 was dropped by USAF,", "replaced with the A6 at Marine Corp", "and A4 at Navy."
     )
 )
 
