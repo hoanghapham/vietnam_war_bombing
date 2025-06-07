@@ -25,4 +25,4 @@ load_libraries(pkg_list)
 
 # Turn on plotly
 Sys.setenv("plotly_username"="hoanghapham")
-Sys.setenv("plotly_api_key"="9TsLOjDB7ownFi05uscy")
+Sys.setenv("plotly_api_key"="XXXXXXXX")
